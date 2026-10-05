@@ -512,7 +512,11 @@
     $('#cn-pages').replaceChildren(...[...known].filter(x => !/^(https?:|mailto:|#)/.test(x)).sort().map(v => h('option', { value: v })));
   }
 
-  function go(v) { view = v; openSection = null; openProduct = null; renderAll(); sendPreview(0); $('#editor').scrollTop = 0; }
+  const phone = () => matchMedia('(max-width: 700px)').matches;
+  function go(v) {
+    view = v; openSection = null; openProduct = null; renderAll(); sendPreview(0); $('#editor').scrollTop = 0;
+    if (phone()) $('#editor').scrollIntoView({ behavior: 'smooth', block: 'start' }); // on a phone the page list sits above the editor
+  }
 
   function renderEditor() {
     const ed = $('#editor'); ed.replaceChildren();
@@ -823,6 +827,7 @@
       fit();
     }));
     new ResizeObserver(fit).observe($('#stage'));
+    $('#toPages').addEventListener('click', () => $('.side').scrollIntoView({ behavior: 'smooth', block: 'start' }));
     addEventListener('pagehide', () => { if (hasDraft) saveDraftNow(); });
 
     frame().src = '../index.html?cnpreview=1';
