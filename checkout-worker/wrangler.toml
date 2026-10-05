@@ -11,8 +11,8 @@ routes = [ { pattern = "shop.thecowsnest.com", custom_domain = true } ]
 [vars]
 SITE_URL = "https://thecowsnest.com"
 ALLOWED_ORIGINS = "https://thecowsnest.com,https://www.thecowsnest.com,http://127.0.0.1:5500"
-SQUARE_ENV = "sandbox"
-SQUARE_LOCATION_ID = "LKQJKYZKDSPTZ"
+   SQUARE_ENV = "production"
+   SQUARE_LOCATION_ID = "LD5TDNMZZTG7Y"
 
 # Digital downloads storage. Turned off until R2 is enabled; remove the # from the
 # three lines below after running: npx wrangler r2 bucket create cowsnest-downloads
