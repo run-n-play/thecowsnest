@@ -1,18 +1,21 @@
 # The Cows Nest – shop Worker (Square)
 # Secrets (never put these in this file):
-#   npx wrangler secret put SQUARE_ACCESS_TOKEN   # sandbox token first, production when going live
-#   openssl rand -hex 32 | npx wrangler secret put SIGNING_SECRET
+#   npx wrangler secret put SQUARE_ACCESS_TOKEN
+#   npx wrangler secret put SIGNING_SECRET
 name = "cowsnest-shop"
 main = "src/index.js"
 compatibility_date = "2026-09-01"
+workers_dev = false
+routes = [ { pattern = "shop.thecowsnest.com", custom_domain = true } ]
 
 [vars]
 SITE_URL = "https://thecowsnest.com"
-ALLOWED_ORIGINS = "https://thecowsnest.com,https://www.thecowsnest.com,http://localhost:8000"
-SQUARE_ENV = "sandbox"                 # change to "production" with the production token
-SQUARE_LOCATION_ID = "REPLACE_ME"      # Square Dashboard > Settings > Locations (sandbox and production differ)
+ALLOWED_ORIGINS = "https://thecowsnest.com,https://www.thecowsnest.com,http://127.0.0.1:5500"
+SQUARE_ENV = "sandbox"
+SQUARE_LOCATION_ID = "LKQJKYZKDSPTZ"
 
-# Digital download files:  npx wrangler r2 object put cowsnest-downloads/<file> --file <local> --remote
-[[r2_buckets]]
-binding = "FILES"
-bucket_name = "cowsnest-downloads"
+# Digital downloads storage. Turned off until R2 is enabled; remove the # from the
+# three lines below after running: npx wrangler r2 bucket create cowsnest-downloads
+# [[r2_buckets]]
+# binding = "FILES"
+# bucket_name = "cowsnest-downloads"
