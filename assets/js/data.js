@@ -1,6 +1,6 @@
 /* The Cows Nest – site content. Edited with /admin. */
 window.CN_DATA = {
-  "updated": "2026-10-05T11:24:32.144Z",
+  "updated": "2026-10-05T19:32:34.604Z",
   "site": {
     "topbar": "Homemade with love, from our nest to yours",
     "taglineScript": "Conversations Over the Picket Fence",
@@ -42,8 +42,8 @@ window.CN_DATA = {
             "href": "paper-goods.html"
           },
           {
-            "label": "Sweet Treats & Goodies",
-            "href": "sweet-treats.html"
+            "label": "Art Prints",
+            "href": "art-prints.html"
           },
           {
             "label": "Apparel & Accessories",
@@ -132,8 +132,8 @@ window.CN_DATA = {
             "href": "paper-goods.html"
           },
           {
-            "label": "Sweet Treats & Goodies",
-            "href": "sweet-treats.html"
+            "label": "Art Prints",
+            "href": "art-prints.html"
           },
           {
             "label": "Apparel & Accessories",
@@ -261,10 +261,10 @@ window.CN_DATA = {
               "link": "paper-goods.html"
             },
             {
-              "title": "Sweet Treats & Goodies",
-              "text": "Baked goods, popcorn, snacks & mixes",
+              "title": "Art Prints",
+              "text": "Original prints, ready to frame",
               "image": "assets/img/cat-treats.jpg",
-              "link": "sweet-treats.html"
+              "link": "art-prints.html"
             },
             {
               "title": "Apparel & Accessories",
@@ -541,42 +541,6 @@ window.CN_DATA = {
         {
           "type": "coming-soon",
           "image": "assets/img/cat-handmade.jpg",
-          "title": "This page is coming soon",
-          "text": "We're still setting this part of the nest up. In the meantime, have a look around the rest of the shop.",
-          "buttons": [
-            {
-              "label": "Back to home",
-              "link": "index.html",
-              "style": "solid"
-            },
-            {
-              "label": "Contact us",
-              "link": "contact.html",
-              "style": "outline"
-            }
-          ]
-        }
-      ]
-    },
-    "sweet-treats": {
-      "title": "Sweet Treats & Goodies | The Cows Nest",
-      "description": "Baked goods, popcorn, snacks and mixes.",
-      "sections": [
-        {
-          "type": "page-hero",
-          "heading": "Sweet Treats & Goodies",
-          "lede": "Baked goods, popcorn, snacks and mixes."
-        },
-        {
-          "type": "product-grid",
-          "title": "",
-          "category": "sweet-treats",
-          "limit": 0,
-          "emptyText": ""
-        },
-        {
-          "type": "coming-soon",
-          "image": "assets/img/cat-treats.jpg",
           "title": "This page is coming soon",
           "text": "We're still setting this part of the nest up. In the meantime, have a look around the rest of the shop.",
           "buttons": [
@@ -1274,10 +1238,46 @@ window.CN_DATA = {
           "type": "order-confirmation"
         }
       ]
+    },
+    "art-prints": {
+      "title": "Art Prints | The Cows Nest",
+      "description": "Original art prints, ready to frame.",
+      "sections": [
+        {
+          "type": "page-hero",
+          "heading": "Art Prints",
+          "lede": "Original art prints, ready to frame."
+        },
+        {
+          "type": "product-grid",
+          "title": "",
+          "category": "art-prints",
+          "limit": 0,
+          "emptyText": ""
+        },
+        {
+          "type": "coming-soon",
+          "image": "assets/img/cat-paper.jpg",
+          "title": "This page is coming soon",
+          "text": "We're still setting this part of the nest up. In the meantime, have a look around the rest of the shop.",
+          "buttons": [
+            {
+              "label": "Back to home",
+              "link": "index.html",
+              "style": "solid"
+            },
+            {
+              "label": "Contact us",
+              "link": "contact.html",
+              "style": "outline"
+            }
+          ]
+        }
+      ]
     }
   },
   "shop": {
-       "checkoutUrl": "https://shop.thecowsnest.com",
+    "checkoutUrl": "https://shop.thecowsnest.com",
     "categories": [
       {
         "label": "Handmade Goods",
@@ -1292,10 +1292,10 @@ window.CN_DATA = {
         "kind": "goods"
       },
       {
-        "label": "Sweet Treats & Goodies",
-        "square": "Sweet Treats",
-        "page": "sweet-treats",
-        "kind": "treat"
+        "label": "Art Prints",
+        "square": "Art Prints",
+        "page": "art-prints",
+        "kind": "goods"
       },
       {
         "label": "Apparel & Accessories",
