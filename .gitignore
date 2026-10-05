@@ -1,0 +1,3 @@
+checkout-worker/node_modules/
+checkout-worker/.wrangler/
+Thumbs.db

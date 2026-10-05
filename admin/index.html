@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Website editor · The Cows Nest</title>
+<link rel="icon" type="image/png" href="../assets/img/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@500;600&display=swap">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<header class="bar">
+  <h1>The Cows Nest <span>website editor</span></h1>
+  <p id="status" class="status" role="status">Loading…</p>
+  <button id="startOver" class="btn-quiet" type="button" hidden>Start over from the live website</button>
+  <button id="download" class="btn-main" type="button" disabled>Download changes</button>
+</header>
+
+<div class="layout">
+  <nav class="side" aria-label="Pages">
+    <h2>Pages</h2>
+    <ul id="pageList" class="page-list"></ul>
+    <button id="newPage" class="btn-quiet wide" type="button">+ New page</button>
+    <h2>Every page</h2>
+    <ul class="page-list"><li><button id="siteBtn" type="button" class="page-btn">Menu, footer &amp; logo</button></li></ul>
+    <h2>Shop</h2>
+    <ul class="page-list">
+      <li><button id="productsBtn" type="button" class="page-btn">Products</button></li>
+      <li><button id="shopBtn" type="button" class="page-btn">Pickup, shipping &amp; categories</button></li>
+    </ul>
+    <div class="howto">
+      <h2>How it works</h2>
+      <ol>
+        <li>Pick a page and change the words or pictures. The preview updates as you type.</li>
+        <li>Your work saves in this browser by itself, so you can close it and come back.</li>
+        <li>When you're happy, press <b>Download changes</b> and send that file to Russell. He puts it on the live site.</li>
+      </ol>
+    </div>
+  </nav>
+
+  <main id="editor" class="editor" tabindex="-1"></main>
+
+  <section class="preview" aria-label="Preview">
+    <div class="preview-bar">
+      <span>Preview</span>
+      <div class="seg" role="group" aria-label="Preview size">
+        <button type="button" data-size="desktop" aria-pressed="true">Computer</button>
+        <button type="button" data-size="phone" aria-pressed="false">Phone</button>
+      </div>
+    </div>
+    <div id="stage" class="stage"><iframe id="preview" title="Page preview"></iframe></div>
+  </section>
+</div>
+
+<datalist id="cn-pages"></datalist>
+<div id="toast" class="toast" role="alert" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>
