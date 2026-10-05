@@ -1277,7 +1277,7 @@ window.CN_DATA = {
     }
   },
   "shop": {
-    "checkoutUrl": "",
+       "checkoutUrl": "https://shop.thecowsnest.com",
     "categories": [
       {
         "label": "Handmade Goods",
