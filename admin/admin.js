@@ -453,7 +453,7 @@
   const saveDraft = debounce(saveDraftNow, 600);
   function saveDraftNow() {
     prune();
-    return idb.set('draft', { data, images: pending, dirty, savedAt: Date.now() })
+    return idb.set('draft', { data, images: pending, dirty, baseSha, savedAt: Date.now() })
       .catch(() => toast('This browser would not save your work. Download your changes before closing.', 8000));
   }
 
@@ -461,10 +461,16 @@
   function updateStatus() {
     const s = $('#status');
     s.className = 'status';
-    if (dirty) { s.textContent = 'You have changes that haven\u2019t been downloaded yet. They are saved in this browser.'; s.classList.add('dirty'); }
+    if (ghToken) {
+      if (dirty) { s.textContent = 'You have changes that aren\u2019t on the website yet. They are saved on this device.'; s.classList.add('dirty'); }
+      else { s.textContent = 'Everything is published.'; s.classList.add('ok'); }
+    } else if (dirty) { s.textContent = 'You have changes that haven\u2019t been downloaded yet. They are saved in this browser.'; s.classList.add('dirty'); }
     else if (hasDraft) { s.textContent = 'Downloaded. Waiting for Russell to put it on the live site.'; }
     else { s.textContent = 'Everything matches the live website.'; s.classList.add('ok'); }
-    $('#download').disabled = !dirty;
+    const btn = $('#download');
+    if (!publishing) btn.textContent = ghToken ? 'Publish to website' : 'Download changes';
+    btn.disabled = !dirty || publishing;
+    $('#publishBtn').setAttribute('aria-current', view.kind === 'publish' ? 'true' : 'false');
     $('#startOver').hidden = !hasDraft;
   }
 
@@ -521,6 +527,7 @@
   function renderEditor() {
     const ed = $('#editor'); ed.replaceChildren();
     if (view.kind === 'products') { renderProducts(ed); return; }
+    if (view.kind === 'publish') { renderPublishSettings(ed); return; }
     if (view.kind === 'shop') {
       ed.append(h('h2', {}, 'Pickup, shipping & categories'),
         h('p', { class: 'lead' }, 'How shoppers get their orders, and how your Square categories match up with pages on this website.'),
@@ -716,13 +723,145 @@
 </html>
 `;
 
+  // ---------- publishing straight to GitHub ----------
+  // The key (a fine-grained GitHub token limited to this one repo) lives only in this
+  // device's IndexedDB. Each publish is ONE commit: data.js + new pictures + new/removed pages.
+  const GH = { owner: 'run-n-play', repo: 'thecowsnest', branch: 'main' };
+  const DATA_PATH = 'assets/js/data.js';
+  let ghToken = '';
+  let baseSha = '';   // git blob sha of the data.js this draft started from (conflict check)
+  const serialize = d => `/* The Cows Nest – site content. Edited with /admin. */\nwindow.CN_DATA = ${JSON.stringify(d, null, 2)};\n`;
+  const parseDataJs = raw => JSON.parse(raw.slice(raw.indexOf('=') + 1, raw.trimEnd().lastIndexOf(';')));
+  const b64FromBytes = bytes => { let out = ''; for (let i = 0; i < bytes.length; i += 0x8000) out += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(out); };
+  const b64FromText = t => b64FromBytes(new TextEncoder().encode(t));
+  const textFromB64 = b => new TextDecoder().decode(Uint8Array.from(atob(String(b).replace(/\s/g, '')), c => c.charCodeAt(0)));
+
+  async function gh(path, opts = {}, token = ghToken) {
+    const res = await fetch(`https://api.github.com/repos/${GH.owner}/${GH.repo}${path}`, {
+      method: opts.method || 'GET', cache: 'no-store',
+      headers: { 'Accept': 'application/vnd.github+json', 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28',
+        ...(opts.body ? { 'Content-Type': 'application/json' } : {}) },
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok) { const e = new Error(out.message || `GitHub ${res.status}`); e.status = res.status; throw e; }
+    return out;
+  }
+  const ghError = err =>
+    err.status === 401 ? 'The publishing key has expired or is wrong. Ask Russell for a new one (Publishing settings in the menu).'
+    : (err.status === 403 || err.status === 404) ? 'The publishing key isn\u2019t allowed to change the website. Ask Russell to check it.'
+    : err.message === 'Failed to fetch' ? 'Could not reach GitHub. Check the internet connection and try again.'
+    : `Publishing failed: ${err.message}`;
+
+  async function remoteData(token = ghToken) {
+    const f = await gh(`/contents/${DATA_PATH}?ref=${GH.branch}`, {}, token);
+    return { sha: f.sha, data: parseDataJs(textFromB64(f.content)) };
+  }
+
+  let publishing = false;
+  async function publish() {
+    if (publishing) return;
+    publishing = true;
+    const btn = $('#download'); btn.disabled = true; btn.textContent = 'Publishing…';
+    try {
+      prune();
+      const remote = await remoteData();
+      if (baseSha && remote.sha !== baseSha && !confirm(
+        'The website was changed somewhere else (maybe by Russell) since you started editing.\n\n' +
+        'OK = publish anyway (your version replaces those changes).\n' +
+        'Cancel = keep them. Then press "Start over from the live website" and redo your edits.')) return;
+      // The shop connection is Russell's setting: always keep the live value.
+      if (remote.data.shop && 'checkoutUrl' in remote.data.shop) data.shop.checkoutUrl = remote.data.shop.checkoutUrl;
+      data.updated = new Date().toISOString();
+
+      const files = [{ path: DATA_PATH, content: b64FromText(serialize(data)) }];
+      for (const [p, blob] of Object.entries(pending)) files.push({ path: p, content: b64FromBytes(new Uint8Array(await blob.arrayBuffer())) });
+      const remotePages = Object.keys(remote.data.pages || {});
+      const added = Object.keys(data.pages).filter(sl => !remotePages.includes(sl));
+      const removed = remotePages.filter(sl => !data.pages[sl] && sl !== 'index');
+      for (const sl of added) files.push({ path: pageFile(sl), content: b64FromText(shell(sl, data.pages[sl])) });
+
+      const tree = [];
+      let dataBlob = '';
+      for (const f of files) {
+        const b = await gh('/git/blobs', { method: 'POST', body: { content: f.content, encoding: 'base64' } });
+        tree.push({ path: f.path, mode: '100644', type: 'blob', sha: b.sha });
+        if (f.path === DATA_PATH) dataBlob = b.sha;
+      }
+      for (const sl of removed) tree.push({ path: pageFile(sl), mode: '100644', type: 'blob', sha: null });
+      const message = ['Website update from the editor', '',
+        Object.keys(pending).length ? `New pictures: ${Object.keys(pending).length}` : '',
+        added.length ? `New pages: ${added.map(pageFile).join(', ')}` : '',
+        removed.length ? `Removed pages: ${removed.map(pageFile).join(', ')}` : ''].filter((x, i) => i < 2 || x).join('\n').trim();
+
+      for (let attempt = 0; ; attempt++) {           // retry if a push landed in between
+        const head = (await gh(`/git/ref/heads/${GH.branch}`)).object.sha;
+        const baseTree = (await gh(`/git/commits/${head}`)).tree.sha;
+        const newTree = await gh('/git/trees', { method: 'POST', body: { base_tree: baseTree, tree } });
+        const commit = await gh('/git/commits', { method: 'POST', body: { message, tree: newTree.sha, parents: [head] } });
+        try { await gh(`/git/refs/heads/${GH.branch}`, { method: 'PATCH', body: { sha: commit.sha, force: false } }); break; }
+        catch (e) { if (e.status === 422 && attempt < 2) continue; throw e; }
+      }
+
+      baseSha = dataBlob;
+      LIVE = clone(data);
+      pending = {};               // pictures are on GitHub now; keep their preview URLs until reload
+      dirty = false; hasDraft = false;
+      await idb.del('draft').catch(() => {});
+      updateStatus(); renderSide();
+      toast('Published! The website updates in about a minute.', 7000);
+    } catch (err) {
+      console.error(err);
+      toast(ghError(err), 9000);
+    } finally {
+      publishing = false;
+      updateStatus();
+    }
+  }
+
+  function renderPublishSettings(ed) {
+    ed.append(h('h2', {}, 'Publishing'));
+    if (ghToken) {
+      const msg = h('p', { class: 'lead' }, 'This device is connected. The Publish to website button puts your changes live.');
+      ed.append(h('div', { class: 'box' }, msg,
+        h('div', { class: 'add-row' },
+          h('button', { type: 'button', class: 'btn-quiet', onclick: async () => {
+            msg.textContent = 'Checking…';
+            try { await remoteData(); msg.textContent = 'Connection works.'; } catch (e) { msg.textContent = ghError(e); }
+          } }, 'Test the connection'),
+          h('button', { type: 'button', class: 'btn-quiet', onclick: async () => {
+            if (!confirm('Disconnect this device? You\u2019ll need the key again to publish from it.')) return;
+            ghToken = ''; await idb.del('gh-token').catch(() => {}); updateStatus(); renderEditor();
+          } }, 'Disconnect this device'),
+          h('button', { type: 'button', class: 'btn-quiet', onclick: download }, 'Download a copy instead'))));
+      return;
+    }
+    const input = h('input', { type: 'password', id: 'ghkey', autocomplete: 'off', placeholder: 'github_pat_…' });
+    const msg = h('p', { class: 'hint' });
+    ed.append(h('p', { class: 'lead' }, 'Connect this device once, and your changes can go straight to the website.'),
+      h('div', { class: 'box' },
+        h('div', { class: 'field' }, h('label', { for: 'ghkey' }, 'Publishing key (from Russell)'), input, msg),
+        h('div', { class: 'add-row' }, h('button', { type: 'button', class: 'btn-main', onclick: async () => {
+          const t = input.value.trim();
+          if (!t) { msg.textContent = 'Paste the key first.'; return; }
+          msg.textContent = 'Checking…';
+          try {
+            const r = await remoteData(t);
+            ghToken = t; await idb.set('gh-token', t);
+            if (!dirty) { LIVE = r.data; baseSha = r.sha; data = clone(LIVE); } else if (!baseSha) baseSha = r.sha;
+            toast('Connected. From now on, use Publish to website.', 6000);
+            updateStatus(); renderAll();
+          } catch (e) { msg.textContent = ghError(e); }
+        } }, 'Connect'))));
+  }
+
   // ---------- download ----------
   async function download() {
     if (!window.JSZip) { toast('The download tool did not load. Check the internet connection and reload this page.', 8000); return; }
     prune();
     data.updated = new Date().toISOString();
     const zip = new JSZip();
-    zip.file('assets/js/data.js', `/* The Cows Nest – site content. Edited with /admin. */\nwindow.CN_DATA = ${JSON.stringify(data, null, 2)};\n`);
+    zip.file(DATA_PATH, serialize(data));
     for (const [p, b] of Object.entries(pending)) zip.file(p, b);
     const added = Object.keys(data.pages).filter(s => !LIVE.pages[s]);
     for (const s of added) zip.file(pageFile(s), shell(s, data.pages[s]));
@@ -740,6 +879,7 @@
     const a = h('a', { href: URL.createObjectURL(blob), download: `cowsnest-changes-${stamp}.zip` });
     document.body.append(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    if (ghToken) { toast('Downloaded a copy. Nothing was published.', 6000); return; }
     dirty = false; hasDraft = true;
     await saveDraftNow(); updateStatus();
     toast('Downloaded. Send that file to Russell and he’ll put it on the live site.', 7000);
@@ -749,6 +889,7 @@
     if (!confirm('Throw away all changes in this browser and go back to what is on the live website?')) return;
     await idb.del('draft').catch(() => {});
     Object.values(urls).forEach(URL.revokeObjectURL);
+    if (ghToken) { try { const r = await remoteData(); LIVE = r.data; baseSha = r.sha; } catch (e) { toast(ghError(e), 8000); } }
     data = clone(LIVE); pending = {}; urls = {}; dirty = false; hasDraft = false;
     go({ kind: 'page', slug: 'index' });
   }
@@ -799,14 +940,24 @@
   }
 
   async function init() {
-    try { LIVE = await loadLive(); }
-    catch (err) { $('#editor').append(h('p', { class: 'lead' }, `The editor could not load the website content (${err.message}). Tell Russell.`)); $('#status').textContent = 'Could not load'; return; }
+    try { ghToken = (await idb.get('gh-token')) || ''; } catch { ghToken = ''; }
+    let liveSha = '';
+    if (ghToken) {
+      // Connected: read straight from GitHub (always current; the public site can lag a minute)
+      try { const r = await remoteData(); LIVE = r.data; liveSha = r.sha; }
+      catch (err) { toast(ghError(err), 9000); }
+    }
+    if (!LIVE) {
+      try { LIVE = await loadLive(); }
+      catch (err) { $('#editor').append(h('p', { class: 'lead' }, `The editor could not load the website content (${err.message}). Tell Russell.`)); $('#status').textContent = 'Could not load'; return; }
+    }
 
     let draft = null;
     try { draft = await idb.get('draft'); } catch { /* private browsing: editor still works, just no autosave */ }
-    if (draft && draft.data && !draft.dirty && draft.data.updated && LIVE.updated && draft.data.updated <= LIVE.updated) {
-      await idb.del('draft').catch(() => {}); draft = null; // Russell published it
+    if (draft && draft.data && !draft.dirty && (ghToken || (draft.data.updated && LIVE.updated && draft.data.updated <= LIVE.updated))) {
+      await idb.del('draft').catch(() => {}); draft = null; // already live
     }
+    baseSha = (draft && draft.baseSha) || liveSha;
     if (draft && draft.data) {
       data = draft.data; pending = draft.images || {}; dirty = !!draft.dirty; hasDraft = true;
       for (const p of Object.keys(pending)) urls[p] = URL.createObjectURL(pending[p]);
@@ -815,7 +966,8 @@
     data.shop = Object.assign({ checkoutUrl: '', websiteCategory: 'Website', categories: [], downloads: [], pickup: { enabled: true, note: '' }, shipping: { enabled: true, flat: 0, freeOver: 0, note: '' }, taxNote: '' }, data.shop || {});
     if (!data.pages.index) data.pages.index = { title: 'The Cows Nest', description: '', sections: [] };
 
-    $('#download').addEventListener('click', download);
+    $('#download').addEventListener('click', () => ghToken ? publish() : download());
+    $('#publishBtn').addEventListener('click', () => go({ kind: 'publish' }));
     $('#startOver').addEventListener('click', startOver);
     $('#newPage').addEventListener('click', newPage);
     $('#siteBtn').addEventListener('click', () => go({ kind: 'site' }));
