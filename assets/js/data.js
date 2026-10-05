@@ -1,6 +1,6 @@
 /* The Cows Nest – site content. Edited with /admin. */
 window.CN_DATA = {
-  "updated": "2026-10-05T19:32:34.604Z",
+  "updated": "2026-10-05T21:30:26.414Z",
   "site": {
     "topbar": "Homemade with love, from our nest to yours",
     "taglineScript": "Conversations Over the Picket Fence",
@@ -12,10 +12,10 @@ window.CN_DATA = {
     ],
     "logo": "assets/img/logo.webp",
     "footerLogo": "assets/img/logo-small.webp",
-    "email": "hello@thecowsnest.com",
+    "email": "thecowsnestsc@gmail.com",
     "social": {
-      "facebook": "#",
-      "instagram": "#",
+      "facebook": "#https://www.facebook.com/thecowsnestsc",
+      "instagram": "#https://www.instagram.com/thecowsnestsc/",
       "pinterest": "#",
       "tiktok": "#"
     },
@@ -184,14 +184,6 @@ window.CN_DATA = {
           {
             "label": "Shipping & Returns",
             "href": "shipping-returns.html"
-          },
-          {
-            "label": "Order Tracking",
-            "href": "order-tracking.html"
-          },
-          {
-            "label": "Payment Options",
-            "href": "payment-options.html"
           },
           {
             "label": "Privacy Policy",
@@ -1069,64 +1061,6 @@ window.CN_DATA = {
         {
           "type": "coming-soon",
           "image": "assets/img/icon-heart2.jpg",
-          "title": "This page is coming soon",
-          "text": "We're still setting this part of the nest up. In the meantime, have a look around the rest of the shop.",
-          "buttons": [
-            {
-              "label": "Back to home",
-              "link": "index.html",
-              "style": "solid"
-            },
-            {
-              "label": "Contact us",
-              "link": "contact.html",
-              "style": "outline"
-            }
-          ]
-        }
-      ]
-    },
-    "order-tracking": {
-      "title": "Order Tracking | The Cows Nest",
-      "description": "Check on an order.",
-      "sections": [
-        {
-          "type": "page-hero",
-          "heading": "Order Tracking",
-          "lede": "Check on an order."
-        },
-        {
-          "type": "coming-soon",
-          "image": "assets/img/icon-nest.jpg",
-          "title": "This page is coming soon",
-          "text": "We're still setting this part of the nest up. In the meantime, have a look around the rest of the shop.",
-          "buttons": [
-            {
-              "label": "Back to home",
-              "link": "index.html",
-              "style": "solid"
-            },
-            {
-              "label": "Contact us",
-              "link": "contact.html",
-              "style": "outline"
-            }
-          ]
-        }
-      ]
-    },
-    "payment-options": {
-      "title": "Payment Options | The Cows Nest",
-      "description": "Ways to pay online and in person.",
-      "sections": [
-        {
-          "type": "page-hero",
-          "heading": "Payment Options",
-          "lede": "Ways to pay online and in person."
-        },
-        {
-          "type": "coming-soon",
-          "image": "assets/img/icon-heart3.jpg",
           "title": "This page is coming soon",
           "text": "We're still setting this part of the nest up. In the meantime, have a look around the rest of the shop.",
           "buttons": [
