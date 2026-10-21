@@ -254,6 +254,44 @@ ${(s.items || []).map(g => `<figure><img src="${src(g.image)}" alt="${esc(g.capt
     'order-confirmation': (s, i) => `<section class="section wrap"${sid(i)}><div class="cn-order" data-shop="order"><p class="cn-empty">Loading your order…</p></div></section>`,
   };
 
+  // ---------- colors (site.theme from the editor's Colors screen) ----------
+  // Each entry: { base: '#RRGGBB', shift: -40..40 } (shift = lighter/darker, in lightness points).
+  const THEME_DEFAULTS = {
+    cream: '#FBF6EC', paper: '#FFFDF8', panel: '#FFFFFF', sand: '#F9EEDB', gingham: '#6FA8AA',
+    teal: '#3F7A80', tealDark: '#2E5E63', line: '#E3D8C4', ink: '#2B2A28', coral: '#D9735F'
+  };
+  const CSS_VAR = { tealDark: 'teal-dark' };
+  const hexOk = h => /^#[0-9a-f]{6}$/i.test(String(h || ''));
+  function shade(hex, shift) {
+    if (!shift) return hex;
+    let [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255);
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+    let h = 0, sat = 0, l = (mx + mn) / 2;
+    if (d) {
+      sat = l > .5 ? d / (2 - mx - mn) : d / (mx + mn);
+      h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h /= 6;
+    }
+    l = Math.min(1, Math.max(0, l + shift / 100));
+    const q = l < .5 ? l * (1 + sat) : l + sat - l * sat, p = 2 * l - q;
+    const f = t => { t = (t + 1) % 1; return t < 1 / 6 ? p + (q - p) * 6 * t : t < .5 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; };
+    return '#' + [h + 1 / 3, h, h - 1 / 3].map(t => Math.round((sat ? f(t) : l) * 255).toString(16).padStart(2, '0')).join('');
+  }
+  function themeColor(theme, key) {
+    const t = (theme || {})[key];
+    const base = t && hexOk(t.base) ? t.base : THEME_DEFAULTS[key];
+    return shade(base, Math.max(-40, Math.min(40, Number(t && t.shift) || 0)));
+  }
+  function applyTheme(theme) {
+    const root = document.documentElement.style;
+    for (const key of Object.keys(THEME_DEFAULTS)) {
+      const name = '--' + (CSS_VAR[key] || key);
+      if (theme && theme[key]) root.setProperty(name, themeColor(theme, key)); else root.removeProperty(name);
+    }
+    // the darkest teal follows the footer color
+    if (theme && theme.tealDark) root.setProperty('--teal-deep', shade(themeColor(theme, 'tealDark'), -12)); else root.removeProperty('--teal-deep');
+    if (theme && theme.teal) root.setProperty('--teal-light', shade(themeColor(theme, 'teal'), 30)); else root.removeProperty('--teal-light');
+  }
+
   function setMeta(desc) {
     let m = document.querySelector('meta[name="description"]');
     if (!m) { m = document.createElement('meta'); m.name = 'description'; document.head.appendChild(m); }
@@ -267,7 +305,8 @@ ${(s.items || []).map(g => `<figure><img src="${src(g.image)}" alt="${esc(g.capt
     const m = document.getElementById('main');
     const f = document.getElementById('cn-footer');
     const productId = opts.productId || new URLSearchParams(location.search).get('id') || '';
-    window.CN = { data, slug, productId, preview, src, esc, paras };
+    window.CN = { data, slug, productId, preview, src, esc, paras, THEME_DEFAULTS, themeColor };
+    applyTheme(site.theme);
     if (h) h.innerHTML = header(site, slug);
     if (f) f.innerHTML = footer(site);
     if (!m) return;

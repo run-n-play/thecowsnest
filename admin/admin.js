@@ -528,6 +528,7 @@
     $('#productsBtn').setAttribute('aria-current', view.kind === 'products' ? 'true' : 'false');
     $('#shopBtn').setAttribute('aria-current', view.kind === 'shop' ? 'true' : 'false');
     $('#setupBtn').setAttribute('aria-current', view.kind === 'setup' ? 'true' : 'false');
+    $('#colorsBtn').setAttribute('aria-current', view.kind === 'colors' ? 'true' : 'false');
     // link suggestions for every "Goes to" box
     const known = new Set(slugs().map(pageFile));
     const walk = l => (l || []).forEach(x => { if (x.href) known.add(x.href); walk(x.children); walk(x.links); });
@@ -546,6 +547,7 @@
     if (view.kind === 'products') { renderProducts(ed); return; }
     if (view.kind === 'publish') { renderPublishSettings(ed); return; }
     if (view.kind === 'shop') { renderShipping(ed); return; }
+    if (view.kind === 'colors') { renderColors(ed); return; }
     if (view.kind === 'setup') {
       ed.append(h('h2', {}, 'Shop setup'),
         h('p', { class: 'notice' }, 'Russell\u2019s settings. These connect Square to the website. You normally don\u2019t need to change anything here.'),
@@ -694,6 +696,78 @@
           } })));
       }
     });
+  }
+
+  // ---------- colors ----------
+  const COLOR_PARTS = [
+    ['cream', 'Page background', 'Behind everything.'],
+    ['paper', 'Paper', 'The page banners at the top and the welcome area on Home.'],
+    ['panel', 'Panels & cards', 'Boxes like the category cards, place cards and the sign-up box.'],
+    ['gingham', 'Ribbon checks', 'The checks in the menu ribbon and the Conversations box.'],
+    ['sand', 'Promise strip', 'The strip with the small icons near the bottom.'],
+    ['teal', 'Main color', 'Buttons, the thin strip at the very top, and links.'],
+    ['tealDark', 'Footer & headings', 'The footer, big headings like the page names, and button hover color.'],
+    ['coral', 'Hearts & highlights', 'The little hearts and the outline when something is selected.'],
+    ['line', 'Thin lines', 'Borders around boxes and dividers.'],
+    ['ink', 'Text', 'The words. Keep it dark so it\u2019s easy to read.']
+  ];
+  const DEFAULT_COLOR = { cream: '#FBF6EC', paper: '#FFFDF8', panel: '#FFFFFF', sand: '#F9EEDB', gingham: '#6FA8AA',
+    teal: '#3F7A80', tealDark: '#2E5E63', line: '#E3D8C4', ink: '#2B2A28', coral: '#D9735F' };
+  function shadeHex(hex, shift) {
+    if (!shift) return hex;
+    let [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255);
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+    let hh = 0, sat = 0, l = (mx + mn) / 2;
+    if (d) {
+      sat = l > .5 ? d / (2 - mx - mn) : d / (mx + mn);
+      hh = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; hh /= 6;
+    }
+    l = Math.min(1, Math.max(0, l + shift / 100));
+    const q = l < .5 ? l * (1 + sat) : l + sat - l * sat, p = 2 * l - q;
+    const f = t => { t = (t + 1) % 1; return t < 1 / 6 ? p + (q - p) * 6 * t : t < .5 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; };
+    return '#' + [hh + 1 / 3, hh, hh - 1 / 3].map(t => Math.round((sat ? f(t) : l) * 255).toString(16).padStart(2, '0')).join('');
+  }
+
+  function renderColors(ed) {
+    if (!data.site.theme || typeof data.site.theme !== 'object') data.site.theme = {};
+    const theme = data.site.theme;
+    ed.append(h('div', { class: 'page-head' }, h('h2', {}, 'Colors'),
+      h('button', { type: 'button', class: 'btn-quiet', onclick: () => {
+        if (!Object.keys(theme).length || !confirm('Put every color back to the original?')) return;
+        data.site.theme = {}; changed(); renderEditor();
+      } }, 'Reset all colors')),
+      h('p', { class: 'lead' }, 'Pick a color, then slide to make it a little lighter or darker. The preview changes as you go.'));
+    for (const [key, name, hint] of COLOR_PARTS) {
+      const cur = () => theme[key] || { base: DEFAULT_COLOR[key], shift: 0 };
+      const result = () => shadeHex(cur().base, Number(cur().shift) || 0);
+      const swatch = h('span', { class: 'swatch' });
+      const amount = h('span', { class: 'amount' });
+      const pickId = 'f' + (++uid), slideId = 'f' + (++uid);
+      const pick = h('input', { id: pickId, type: 'color', value: cur().base, 'aria-label': `${name}: color` });
+      const slide = h('input', { id: slideId, type: 'range', min: -40, max: 40, step: 1, value: cur().shift || 0, 'aria-label': `${name}: darker or lighter` });
+      const reset = h('button', { type: 'button', class: 'btn-quiet small' }, 'Reset');
+      const show = () => {
+        swatch.style.background = result();
+        const n = Number(cur().shift) || 0;
+        amount.textContent = n === 0 ? 'As picked' : n > 0 ? `${n} lighter` : `${-n} darker`;
+        reset.hidden = !theme[key];
+      };
+      const save = (base, shift) => {
+        if (base.toLowerCase() === DEFAULT_COLOR[key].toLowerCase() && !shift) delete theme[key];
+        else theme[key] = { base, shift };
+        changed(); show();
+      };
+      pick.addEventListener('input', () => save(pick.value, Number(slide.value)));
+      slide.addEventListener('input', () => save(pick.value, Number(slide.value)));
+      slide.addEventListener('dblclick', () => { slide.value = 0; save(pick.value, 0); });
+      reset.addEventListener('click', () => { pick.value = DEFAULT_COLOR[key]; slide.value = 0; save(DEFAULT_COLOR[key], 0); });
+      ed.append(h('div', { class: 'box color-row' },
+        h('div', { class: 'color-head' }, swatch, h('div', {}, h('b', {}, name), h('p', { class: 'hint' }, hint)), reset),
+        h('div', { class: 'color-ctrl' }, pick,
+          h('span', { class: 'scale-end' }, 'Darker'), slide, h('span', { class: 'scale-end' }, 'Lighter'), amount)));
+      show();
+    }
+    ed.append(h('p', { class: 'hint' }, 'Tip: double-click a slider to put it back in the middle.'));
   }
 
   // ---------- shipping & pickup (her screen: plain words, just prices) ----------
@@ -1079,6 +1153,7 @@
     $('#productsBtn').addEventListener('click', () => go({ kind: 'products' }));
     $('#shopBtn').addEventListener('click', () => go({ kind: 'shop' }));
     $('#setupBtn').addEventListener('click', () => go({ kind: 'setup' }));
+    $('#colorsBtn').addEventListener('click', () => go({ kind: 'colors' }));
     document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
       size = b.dataset.size;
       document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));

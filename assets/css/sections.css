@@ -88,8 +88,8 @@
 
 /* Places: booths, stand, markets — map + directions + their page */
 .places { display: grid; gap: 22px; }
-.place-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); background: #fff; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-.place-card .place-img { grid-column: 1 / -1; width: 100%; height: 220px; object-fit: contain; background: #fff; padding: 12px; border-bottom: 1px solid var(--line); }
+.place-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.place-card .place-img { grid-column: 1 / -1; width: 100%; height: 220px; object-fit: contain; background: var(--panel); padding: 12px; border-bottom: 1px solid var(--line); }
 .place-body { padding: 24px; display: flex; flex-direction: column; gap: 10px; }
 .place-body h3 { margin: 0; font-family: var(--serif-display); font-weight: 400; font-size: 19px; letter-spacing: .08em; text-transform: uppercase; }
 .place-body p { margin: 0; line-height: 1.5; color: var(--ink-soft); }
