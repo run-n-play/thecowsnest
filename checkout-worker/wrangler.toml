@@ -25,6 +25,6 @@ ORDER_EMAIL_FROM = "orders@thecowsnest.com"
 
 # Order emails. Turned off until Email Routing is on for thecowsnest.com and
 # thecowsnestsc@gmail.com is a verified destination. Then remove the # from these 3 lines.
-# [[send_email]]
-# name = "ORDER_MAIL"
-# destination_address = "thecowsnestsc@gmail.com"
+[[send_email]]
+name = "ORDER_MAIL"
+destination_address = "thecowsnestsc@gmail.com"
