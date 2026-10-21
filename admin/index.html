@@ -21,7 +21,7 @@
 <header class="bar">
   <h1>The Cows Nest <span>website editor</span></h1>
   <p id="status" class="status" role="status">Loading…</p>
-  <button id="startOver" class="btn-quiet" type="button" hidden>Start over from the live website</button>
+  <button id="startOver" class="btn-quiet" type="button" hidden>Undo all my changes</button>
   <button id="download" class="btn-main" type="button" disabled>Download changes</button>
 </header>
 
@@ -30,21 +30,24 @@
     <h2>Pages</h2>
     <ul id="pageList" class="page-list"></ul>
     <button id="newPage" class="btn-quiet wide" type="button">+ New page</button>
-    <h2>Every page</h2>
-    <ul class="page-list"><li><button id="siteBtn" type="button" class="page-btn">Menu, footer &amp; logo</button></li></ul>
+    <h2>On every page</h2>
+    <ul class="page-list"><li><button id="siteBtn" type="button" class="page-btn">Menu, footer, logo &amp; social links</button></li></ul>
     <h2>Shop</h2>
     <ul class="page-list">
       <li><button id="productsBtn" type="button" class="page-btn">Products</button></li>
-      <li><button id="shopBtn" type="button" class="page-btn">Pickup, shipping &amp; categories</button></li>
+      <li><button id="shopBtn" type="button" class="page-btn">Shipping &amp; pickup prices</button></li>
     </ul>
-    <h2>Publishing</h2>
-    <ul class="page-list"><li><button id="publishBtn" type="button" class="page-btn">Publishing settings</button></li></ul>
+    <h2>Settings</h2>
+    <ul class="page-list">
+      <li><button id="publishBtn" type="button" class="page-btn">Connect this device</button></li>
+      <li><button id="setupBtn" type="button" class="page-btn">Shop setup <small>Russell only</small></button></li>
+    </ul>
     <div class="howto">
       <h2>How it works</h2>
       <ol>
-        <li>Pick a page and change the words or pictures. The preview updates as you type.</li>
-        <li>Your work saves in this browser by itself, so you can close it and come back.</li>
-        <li>When you're happy, press <b>Publish to website</b>. The live site updates in about a minute. (On a device that isn't connected yet, the button says <b>Download changes</b>; send that file to Russell.)</li>
+        <li>Pick a page on the left and change the words or pictures.</li>
+        <li>Your changes save on this device by themselves.</li>
+        <li>Press <b>Publish to website</b> at the top. The website updates in about a minute.</li>
       </ol>
     </div>
   </nav>

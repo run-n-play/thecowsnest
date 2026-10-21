@@ -147,3 +147,18 @@ p.group-title { font: 600 1.05rem var(--serif); margin: 1rem 0 .2rem; border: 0;
     background: var(--ink); color: #fff; border: 0; border-radius: 999px; padding: .7rem 1.1rem; font-weight: 600; box-shadow: 0 4px 14px rgba(0,0,0,.2); }
   .bar { padding-top: calc(.7rem + env(safe-area-inset-top, 0px)); }
 }
+
+/* shipping & pickup prices */
+.box-title { font: 600 1.25rem var(--serif); margin: 0 0 .2rem; }
+.price-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .55rem 0; border-bottom: 1px solid var(--line); }
+.price-row:last-of-type { border-bottom: 0; }
+.price-row label { font-weight: 600; font-size: .95rem; }
+.price-row label small { display: block; font-weight: 400; font-size: .8rem; color: var(--muted); }
+.price-row .money { flex: none; width: 8rem; }
+.price-row .money input { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: .5rem .6rem; background: #fff; }
+.example { background: var(--paper); border-radius: 8px; padding: .6rem .8rem; font-size: .9rem; margin: .8rem 0 0; }
+.howto-box ol { margin: .4rem 0 .4rem 1.2rem; padding: 0; }
+.howto-box li { margin-bottom: .3rem; }
+details.more > summary { cursor: pointer; font-weight: 600; color: var(--muted); }
+details.more[open] > summary { margin-bottom: .2rem; }
+.page-btn small { display: inline; margin-left: .3rem; }

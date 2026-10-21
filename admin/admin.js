@@ -247,14 +247,7 @@
     ['treat', 'Sweet treat: local pickup, or shipping within South Carolina only'],
     ['digital', 'Digital download: shopper gets a download link right after paying']
   ];
-  const SHOP_FIELDS = [
-    { t: 'group', k: 'pickup', l: 'Local pickup', fields: [F.check('enabled', 'Offer local pickup'),
-      F.area('note', 'What pickup shoppers should know', 'Shown in the cart and on the thank-you page.')] },
-    { t: 'group', k: 'shipping', l: 'Shipping', fields: [F.check('enabled', 'Offer shipping'),
-      F.money('flat', 'Shipping price per order'),
-      F.money('freeOver', 'Free shipping when the order is at least', 'Put 0 to never make shipping free.'),
-      F.area('note', 'Shipping note', 'For example: Orders ship within 3 to 5 business days.')] },
-    F.area('taxNote', 'Note under the cart total (optional)', 'Square adds sales tax at checkout using the tax settings in your Square account.'),
+  const SETUP_FIELDS = [
     F.text('websiteCategory', 'Square category that puts an item on the website', 'An item only shows on the website when it has this category in Square, plus one of the categories below.'),
     { t: 'list', k: 'categories', l: 'Categories', hint: 'Match each Square category to a page on this website, and pick its pickup and shipping rule.', itemName: 'category',
       item: { t: 'group', fields: [
@@ -262,7 +255,11 @@
         F.text('label', 'Name on the website'),
         { t: 'select', k: 'page', l: 'Its page', options: () => slugs().map(sl => [sl, `${pageLabel(sl)} (${pageFile(sl)})`]) },
         { t: 'select', k: 'kind', l: 'Pickup and shipping rule', options: KINDS }] },
-      make: () => ({ square: '', label: 'New category', page: 'shop', kind: 'goods' }) }
+      make: () => ({ square: '', label: 'New category', page: 'shop', kind: 'goods' }) },
+    { t: 'group', k: 'shipping', fields: [
+      { t: 'list', k: 'sizes', l: 'Shipping sizes', hint: 'Each size is a category in Square. Her prices for them are on Shipping & pickup prices.', itemName: 'size',
+        item: { t: 'group', fields: [F.text('label', 'Name she sees'), F.text('square', 'Category name in Square'), F.money('price', 'Price')] },
+        make: () => ({ label: 'New size', square: 'Ship: New size', price: 0 }) }] }
   ];
 
   const SITE_FIELDS = [
@@ -272,9 +269,8 @@
     F.img('logo', 'Logo at the top', { max: 700 }),
     F.img('footerLogo', 'Logo in the footer', { max: 600 }),
     F.text('email', 'Email address', 'Shown in the footer with an email icon.'),
-    { t: 'group', k: 'social', l: 'Social media links', hint: 'Leave one empty to hide that icon.',
-      fields: [F.text('facebook', 'Facebook web address'), F.text('instagram', 'Instagram web address'),
-        F.text('pinterest', 'Pinterest web address'), F.text('tiktok', 'TikTok web address')] },
+    { t: 'group', k: 'social', l: 'Social media links', hint: 'Paste the full address of your page. Leave one empty to hide that icon.',
+      fields: [F.text('facebook', 'Facebook'), F.text('instagram', 'Instagram'), F.text('tiktok', 'TikTok')] },
     { t: 'list', k: 'nav', l: 'Top menu', itemName: 'menu item',
       item: { t: 'group', fields: [F.text('label', 'Words'), F.link('href'),
         { t: 'list', k: 'children', l: 'Drop-down items', itemName: 'drop-down item', item: LINK_ITEM, make: newLink }] },
@@ -497,7 +493,7 @@
     const slugOf = href => { const m = /^([a-z0-9-]+)\.html$/.exec(String(href || '')); return m && data.pages[m[1]] ? m[1] : null; };
     const placed = new Set();
     const btn = slug => h('li', {}, h('button', { type: 'button', class: 'page-btn', 'aria-current': view.kind === 'page' && view.slug === slug ? 'true' : null,
-      onclick: () => go({ kind: 'page', slug }) }, pageLabel(slug), h('small', {}, pageFile(slug))));
+      onclick: () => go({ kind: 'page', slug }) }, pageLabel(slug)));
     const group = (title, list) => {
       list = [...new Set(list.filter(x => x && !placed.has(x)))];
       if (!list.length) return;
@@ -511,6 +507,7 @@
     $('#siteBtn').setAttribute('aria-current', view.kind === 'site' ? 'true' : 'false');
     $('#productsBtn').setAttribute('aria-current', view.kind === 'products' ? 'true' : 'false');
     $('#shopBtn').setAttribute('aria-current', view.kind === 'shop' ? 'true' : 'false');
+    $('#setupBtn').setAttribute('aria-current', view.kind === 'setup' ? 'true' : 'false');
     // link suggestions for every "Goes to" box
     const known = new Set(slugs().map(pageFile));
     const walk = l => (l || []).forEach(x => { if (x.href) known.add(x.href); walk(x.children); walk(x.links); });
@@ -528,37 +525,43 @@
     const ed = $('#editor'); ed.replaceChildren();
     if (view.kind === 'products') { renderProducts(ed); return; }
     if (view.kind === 'publish') { renderPublishSettings(ed); return; }
-    if (view.kind === 'shop') {
-      ed.append(h('h2', {}, 'Pickup, shipping & categories'),
-        h('p', { class: 'lead' }, 'How shoppers get their orders, and how your Square categories match up with pages on this website.'),
-        h('div', { class: 'box' }, SHOP_FIELDS.map(f => fieldEl(f, data.shop))));
+    if (view.kind === 'shop') { renderShipping(ed); return; }
+    if (view.kind === 'setup') {
+      ed.append(h('h2', {}, 'Shop setup'),
+        h('p', { class: 'notice' }, 'Russell\u2019s settings. These connect Square to the website. You normally don\u2019t need to change anything here.'),
+        h('div', { class: 'box' }, SETUP_FIELDS.map(f => fieldEl(f, data.shop))),
+        h('p', { class: 'hint' }, `Shop connection: ${data.shop.checkoutUrl || 'not set'} (changed only in data.js).`));
       return;
     }
     if (view.kind === 'site') {
-      ed.append(h('h2', {}, 'Menu, footer & logo'),
+      ed.append(h('h2', {}, 'Menu, footer, logo & social links'),
         h('p', { class: 'lead' }, 'These show on every page.'),
         h('div', { class: 'box' }, SITE_FIELDS.map(f => fieldEl(f, data.site))));
       return;
     }
     const slug = view.slug, page = data.pages[slug];
     ed.append(h('div', { class: 'page-head' },
-      h('h2', {}, pageLabel(slug)), h('span', { class: 'file' }, pageFile(slug)),
+      h('h2', {}, pageLabel(slug)), h('span', { class: 'file' }),
       slug !== 'index' ? h('button', { type: 'button', class: 'btn-quiet', onclick: () => deletePage(slug) }, 'Delete page') : null));
-    ed.append(h('div', { class: 'box' },
-      fieldEl(F.text('title', 'Title in the browser tab'), page),
-      fieldEl(F.area('description', 'Search engine blurb', 'The short description Google shows under the link. One or two sentences.'), page)));
+    ed.append(h('p', { class: 'lead' }, 'Click a section to open it. Click a spot in the preview to jump to it.'));
     ed.append(h('h3', { class: 'sub' }, 'Sections, top to bottom'));
     if (!page.sections.length) ed.append(h('p', { class: 'lead' }, 'This page is empty. Add a section below to get started.'));
     page.sections.forEach((s, i) => ed.append(sectionEl(page, s, i)));
 
-    const sel = h('select', { 'aria-label': 'Kind of section to add' },
-      Object.entries(TYPES).filter(([, t]) => !t.system).map(([k, t]) => h('option', { value: k }, `${t.name}: ${t.blurb}`)));
-    sel.value = 'text';
-    ed.append(h('div', { class: 'add-row' }, sel,
+    const blurb = h('p', { class: 'hint' });
+    const sel = h('select', { 'aria-label': 'Kind of section to add', onchange: () => { blurb.textContent = TYPES[sel.value].blurb; } },
+      Object.entries(TYPES).filter(([, t]) => !t.system).map(([k, t]) => h('option', { value: k }, t.name)));
+    sel.value = 'text'; blurb.textContent = TYPES.text.blurb;
+    ed.append(h('h3', { class: 'sub' }, 'Add a section'), h('div', { class: 'add-row' }, sel,
       h('button', { type: 'button', class: 'btn-quiet', onclick: () => {
         page.sections.push(TYPES[sel.value].make());
         openSection = page.sections.length - 1; changed(); renderEditor(); sendPreview(openSection);
-      } }, '+ Add section')));
+      } }, '+ Add')), blurb);
+
+    ed.append(h('details', { class: 'box more' }, h('summary', {}, 'Google & browser tab (optional)'),
+      fieldEl(F.text('title', 'Title in the browser tab'), page),
+      fieldEl(F.area('description', 'What Google shows under the link', 'One or two sentences about this page.'), page),
+      h('p', { class: 'hint' }, `Page file: ${pageFile(slug)}`)));
   }
 
   function sectionEl(page, s, i) {
@@ -622,6 +625,7 @@
         h('b', {}, data.shop.websiteCategory || 'Website'), ', and one of the shop categories (for example ',
         h('b', {}, ((data.shop.categories || [])[0] || {}).square || 'Handmade Goods'), '). Market-only items just leave off ',
         h('b', {}, data.shop.websiteCategory || 'Website'), '.'),
+      h('p', {}, 'For shipping, also give it one size category: ', ...sizeNames(), '. See ', h('b', {}, 'Shipping & pickup prices'), '.'),
       h('p', {}, 'Sold out: when Square tracks stock for an item, it shows Sold out here by itself when the count hits zero.')));
     const list = h('div', {}, h('p', { class: 'lead' }, 'Checking Square…'));
     ed.append(h('h3', { class: 'sub' }, 'On the website right now'), list);
@@ -645,6 +649,7 @@
               p.images[0] ? h('img', { class: 'p-thumb', src: p.images[0], alt: '' }) : h('span', { class: 'p-thumb' }),
               h('span', { class: 'sec-name' }, p.name),
               h('span', { class: 'sec-title' }, p.variations.map(v => `${p.variations.length > 1 ? v.name + ' ' : ''}${money(v.price)}`).join(' · ')),
+              p.kind !== 'digital' ? (p.ship ? h('span', { class: 'badge' }, p.ship) : h('span', { class: 'badge warn' }, 'No shipping size')) : null,
               sold ? h('span', { class: 'badge' }, 'Sold out') : null,
               p.kind === 'digital' && !p.digitalReady ? h('span', { class: 'badge warn' }, 'Needs a file') : null,
               h('button', { type: 'button', class: 'btn-quiet', onclick: () => { openProduct = p.id; sendPreview(); } }, 'Preview')));
@@ -667,6 +672,80 @@
             else data.shop.downloads = data.shop.downloads.filter(x => x.item !== p.id);
             changed();
           } })));
+      }
+    });
+  }
+
+  // ---------- shipping & pickup (her screen: plain words, just prices) ----------
+  const sizesOf = () => { const sh = data.shop.shipping; if (!Array.isArray(sh.sizes)) sh.sizes = []; return sh.sizes; };
+  const sizeNames = () => sizesOf().flatMap((z, i, a) => [h('b', {}, z.square), i < a.length - 2 ? ', ' : i === a.length - 2 ? ' or ' : '']);
+
+  function renderShipping(ed) {
+    const sh = data.shop.shipping, pk = data.shop.pickup;
+    const priceRow = (obj, key, label, hint) => {
+      const id = 'f' + (++uid);
+      return h('div', { class: 'price-row' }, h('label', { for: id }, label, hint ? h('small', {}, hint) : null),
+        h('div', { class: 'money' }, h('span', { 'aria-hidden': 'true' }, '$'),
+          h('input', { id, type: 'text', inputmode: 'decimal', value: (Number(obj[key]) || 0).toFixed(2),
+            oninput: e => { const n = parseFloat(e.target.value.replace(/[$,\s]/g, '')); obj[key] = isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : 0; changed(); example(); },
+            onblur: e => { e.target.value = (Number(obj[key]) || 0).toFixed(2); } })));
+    };
+    const ex = h('p', { class: 'example' });
+    const m2 = n => '$' + (Number(n) || 0).toFixed(2);
+    function example() {
+      const z = sizesOf(); if (!z.length) { ex.textContent = ''; return; }
+      const big = z.reduce((a, b) => (Number(b.price) > Number(a.price) ? b : a));
+      ex.textContent = `Example: one ${big.label.toLowerCase()} item and 2 more items ship for ${m2(big.price)} + ${m2(sh.extraItem)} + ${m2(sh.extraItem)} = ${m2(Number(big.price) + 2 * Number(sh.extraItem || 0))}.`
+        + (Number(sh.freeOver) > 0 ? ` Orders of ${m2(sh.freeOver)} or more ship free.` : '');
+    }
+
+    ed.append(h('h2', {}, 'Shipping & pickup prices'),
+      h('p', { class: 'lead' }, 'Shoppers see these in the cart before they pay.'));
+
+    const shipBox = h('div', { class: 'box' },
+      h('h3', { class: 'box-title' }, 'Shipping'),
+      fieldEl(F.check('enabled', 'Offer shipping'), sh),
+      h('p', { class: 'hint' }, 'An order pays for its biggest size, plus a little for each extra item.'),
+      ...sizesOf().map(z => priceRow(z, 'price', z.label)),
+      priceRow(sh, 'extraItem', 'Each extra item adds', 'Put 0 for no extra charge.'),
+      priceRow(sh, 'flat', 'Items with no size set', 'Used when an item has no size category in Square.'),
+      priceRow(sh, 'freeOver', 'Free shipping on orders of', 'Put 0 to never ship free.'),
+      ex,
+      fieldEl(F.area('note', 'Shipping note', 'For example: Orders ship within 3 to 5 business days.'), sh));
+    example();
+
+    const pickBox = h('div', { class: 'box' },
+      h('h3', { class: 'box-title' }, 'Local pickup (free)'),
+      fieldEl(F.check('enabled', 'Offer local pickup'), pk),
+      fieldEl(F.area('note', 'What pickup shoppers should know', 'Shown in the cart and on the thank-you page.'), pk));
+
+    const howBox = h('div', { class: 'box howto-box' },
+      h('h3', { class: 'box-title' }, 'Setting an item\u2019s size in Square'),
+      h('ol', {},
+        h('li', {}, 'In Square, open the item.'),
+        h('li', {}, 'Under Categories, tick one size: ', ...sizeNames(), '.'),
+        h('li', {}, 'Save. The website picks it up within a minute.')),
+      h('p', { class: 'hint' }, 'Make those size categories once in Square (Items \u2192 Categories) with exactly these names.'));
+
+    const list = h('div', {}, h('p', { class: 'lead' }, 'Checking Square\u2026'));
+    ed.append(shipBox, pickBox, howBox, h('h3', { class: 'sub' }, 'Your items\u2019 sizes'), list,
+      h('div', { class: 'box' }, fieldEl(F.area('taxNote', 'Note under the cart total (optional)', 'Square adds sales tax at checkout by itself.'), data.shop)));
+
+    fetchSquare().then(res => {
+      list.replaceChildren();
+      if (res.error) { list.append(h('p', { class: 'notice' }, 'Couldn\u2019t reach Square just now. Try again in a minute.')); return; }
+      const items = res.products.filter(p => p.kind !== 'digital');
+      if (!items.length) { list.append(h('p', { class: 'lead' }, 'No shipped items on the website yet.')); return; }
+      const missing = items.filter(p => !p.ship).length;
+      list.append(h('p', { class: missing ? 'notice' : 'hint' }, missing
+        ? `${missing} item${missing > 1 ? 's have' : ' has'} no size yet, so ${missing > 1 ? 'they use' : 'it uses'} the "no size" price of ${m2(sh.flat)}.`
+        : 'Every item has a size.'));
+      for (const p of [...items].sort((a, b) => !!a.ship - !!b.ship || a.name.localeCompare(b.name))) {
+        list.append(h('div', { class: 'sq-item' },
+          p.images[0] ? h('img', { class: 'p-thumb', src: p.images[0], alt: '' }) : h('span', { class: 'p-thumb' }),
+          h('span', { class: 'sec-name' }, p.name),
+          h('span', { class: 'sec-title' }),
+          p.ship ? h('span', { class: 'badge' }, p.ship) : h('span', { class: 'badge warn' }, 'No size')));
       }
     });
   }
@@ -748,7 +827,7 @@
     return out;
   }
   const ghError = err =>
-    err.status === 401 ? 'The publishing key has expired or is wrong. Ask Russell for a new one (Publishing settings in the menu).'
+    err.status === 401 ? 'The publishing key has expired or is wrong. Ask Russell for a new one (Connect this device, on the left).'
     : (err.status === 403 || err.status === 404) ? 'The publishing key isn\u2019t allowed to change the website. Ask Russell to check it.'
     : err.message === 'Failed to fetch' ? 'Could not reach GitHub. Check the internet connection and try again.'
     : `Publishing failed: ${err.message}`;
@@ -769,9 +848,9 @@
       if (baseSha && remote.sha !== baseSha && !confirm(
         'The website was changed somewhere else (maybe by Russell) since you started editing.\n\n' +
         'OK = publish anyway (your version replaces those changes).\n' +
-        'Cancel = keep them. Then press "Start over from the live website" and redo your edits.')) return;
+        'Cancel = keep them. Then press "Undo all my changes" and redo your edits.')) return;
       // The shop connection is Russell's setting: always keep the live value.
-      if (remote.data.shop && 'checkoutUrl' in remote.data.shop) data.shop.checkoutUrl = remote.data.shop.checkoutUrl;
+      if (remote.data.shop && remote.data.shop.checkoutUrl) data.shop.checkoutUrl = remote.data.shop.checkoutUrl;
       data.updated = new Date().toISOString();
 
       const files = [{ path: DATA_PATH, content: b64FromText(serialize(data)) }];
@@ -820,7 +899,7 @@
   }
 
   function renderPublishSettings(ed) {
-    ed.append(h('h2', {}, 'Publishing'));
+    ed.append(h('h2', {}, 'Connect this device'));
     if (ghToken) {
       const msg = h('p', { class: 'lead' }, 'This device is connected. The Publish to website button puts your changes live.');
       ed.append(h('div', { class: 'box' }, msg,
@@ -901,7 +980,7 @@
     if (!previewReady || !f.contentWindow) return;
     let page = 'index', productId;
     if (view.kind === 'page') page = view.slug;
-    else if (view.kind === 'shop') page = 'cart';
+    else if (view.kind === 'shop' || view.kind === 'setup') page = 'cart';
     else if (view.kind === 'products') { productId = openProduct; page = productId ? 'product' : 'shop'; }
     f.contentWindow.postMessage({ type: 'cn-render', data, page, productId, images: urls, scrollTo }, '*');
   }
@@ -964,6 +1043,11 @@
     } else data = clone(LIVE);
     data.site = data.site || {}; data.pages = data.pages || {};
     data.shop = Object.assign({ checkoutUrl: '', websiteCategory: 'Website', categories: [], downloads: [], pickup: { enabled: true, note: '' }, shipping: { enabled: true, flat: 0, freeOver: 0, note: '' }, taxNote: '' }, data.shop || {});
+    data.shop.shipping = Object.assign({ sizes: [
+      { label: 'Envelope', square: 'Ship: Envelope', price: 5 },
+      { label: 'Small box', square: 'Ship: Small box', price: 10 },
+      { label: 'Large box', square: 'Ship: Large box', price: 18 }], extraItem: 1 }, data.shop.shipping || {});
+    if (data.site.social) delete data.site.social.pinterest;
     if (!data.pages.index) data.pages.index = { title: 'The Cows Nest', description: '', sections: [] };
 
     $('#download').addEventListener('click', () => ghToken ? publish() : download());
@@ -973,6 +1057,7 @@
     $('#siteBtn').addEventListener('click', () => go({ kind: 'site' }));
     $('#productsBtn').addEventListener('click', () => go({ kind: 'products' }));
     $('#shopBtn').addEventListener('click', () => go({ kind: 'shop' }));
+    $('#setupBtn').addEventListener('click', () => go({ kind: 'setup' }));
     document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
       size = b.dataset.size;
       document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));

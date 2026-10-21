@@ -186,9 +186,23 @@
     if (!physical) form.fulfillment = '';
     else if (!form.fulfillment || (form.fulfillment === 'pickup' && !canPickup) || (form.fulfillment === 'ship' && !canShip))
       form.fulfillment = canPickup ? 'pickup' : canShip ? 'ship' : '';
-    const sh = s.shipping || {};
-    const shipCost = form.fulfillment === 'ship' ? ((Number(sh.freeOver) > 0 && subtotal >= Math.round(Number(sh.freeOver) * 100)) ? 0 : Math.round((Number(sh.flat) || 0) * 100)) : 0;
-    return { lines, ok, subtotal, physical, treat, canPickup, canShip, shipCost };
+    const ship = form.fulfillment === 'ship' ? shippingCost(ok.filter(l => l.p.kind !== 'digital'), subtotal) : { cost: 0 };
+    return { lines, ok, subtotal, physical, treat, canPickup, canShip, shipCost: ship.cost, ship };
+  }
+
+  // Same rule as the shop Worker (which sets the real charge): the biggest box in the order,
+  // plus a little for each extra item. Items with no size in Square use the flat price.
+  function shippingCost(lines, subtotal) {
+    const sh = shop().shipping || {};
+    const cents = n => Math.max(0, Math.round((Number(n) || 0) * 100));
+    const count = lines.reduce((t, l) => t + l.qty, 0);
+    if (!count) return { cost: 0 };
+    const freeAt = Number(sh.freeOver) > 0 ? cents(sh.freeOver) : 0;
+    if (freeAt && subtotal >= freeAt) return { cost: 0, free: true };
+    const sizes = (Array.isArray(sh.sizes) ? sh.sizes : []).filter(z => z && z.label);
+    const priceOf = label => { const z = sizes.find(x => x.label === label); return z ? cents(z.price) : cents(sh.flat); };
+    const biggest = Math.max(...lines.map(l => priceOf(l.p.ship)));
+    return { cost: biggest + (count - 1) * cents(sh.extraItem), toFree: freeAt ? freeAt - subtotal : 0 };
   }
 
   async function renderCart(el) {
@@ -240,6 +254,7 @@ ${c.lines.map((l, i) => `  <div class="cn-line${l.ok ? '' : ' is-gone'}">
   <dl class="cn-totals">
     <dt>Subtotal</dt><dd>${money(c.subtotal)}</dd>
     ${form.fulfillment === 'ship' ? `<dt>Shipping</dt><dd>${c.shipCost ? money(c.shipCost) : 'Free'}</dd>` : ''}
+    ${form.fulfillment === 'ship' && c.ship.toFree > 0 ? `<dd class="cn-free-hint">Add ${money(c.ship.toFree)} more for free shipping.</dd>` : ''}
     <dt>Total before tax</dt><dd><strong>${money(c.subtotal + c.shipCost)}</strong></dd>
   </dl>
   ${s.taxNote ? `<p class="cn-note">${esc(s.taxNote)}</p>` : ''}
@@ -345,7 +360,7 @@ ${o.downloads && o.downloads.length ? `<h2>Your downloads</h2>
     }
   }
 
-    // ---------- "Join the herd" sign-up -> Square customer list ----------
+  // ---------- "Join the herd" sign-up -> Square customer list ----------
   document.addEventListener('submit', async e => {
     const f = e.target.closest && e.target.closest('form.signup');
     if (!f) return;
@@ -370,7 +385,7 @@ ${o.downloads && o.downloads.length ? `<h2>Your downloads</h2>
       note.textContent = err.message === 'Failed to fetch' ? 'Could not reach us. Check your connection and try again.' : err.message;
     } finally { btn.disabled = false; }
   }, true);
-  
+
   // ---------- wiring ----------
   function refreshCart() {
     updateHeader();

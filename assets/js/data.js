@@ -14,9 +14,8 @@ window.CN_DATA = {
     "footerLogo": "assets/img/logo-small.webp",
     "email": "thecowsnestsc@gmail.com",
     "social": {
-      "facebook": "#",
-      "instagram": "#",
-      "pinterest": "#",
+      "facebook": "https://www.facebook.com/thecowsnestsc",
+      "instagram": "https://www.instagram.com/thecowsnestsc/",
       "tiktok": "https://www.tiktok.com/@thecowsnestsc/"
     },
     "nav": [
@@ -1211,7 +1210,7 @@ window.CN_DATA = {
     }
   },
   "shop": {
-       "checkoutUrl": "https://shop.thecowsnest.com",
+    "checkoutUrl": "https://shop.thecowsnest.com",
     "websiteCategory": "Website",
     "categories": [
       {
@@ -1264,6 +1263,24 @@ window.CN_DATA = {
     },
     "shipping": {
       "enabled": true,
+      "sizes": [
+        {
+          "label": "Envelope",
+          "square": "Ship: Envelope",
+          "price": 5
+        },
+        {
+          "label": "Small box",
+          "square": "Ship: Small box",
+          "price": 10
+        },
+        {
+          "label": "Large box",
+          "square": "Ship: Large box",
+          "price": 18
+        }
+      ],
+      "extraItem": 1,
       "flat": 8,
       "freeOver": 75,
       "note": "Orders ship within 3–5 business days."

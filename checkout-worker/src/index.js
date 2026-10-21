@@ -10,6 +10,11 @@
    the categories mapped in shop.categories. The mapping also sets each item's page and rule
    (goods / treat / digital). Digital download files: shop.downloads [{ item, file }].
 
+   Shipping size: an item's size comes from a Square category listed in shop.shipping.sizes
+   ("Ship: Envelope", "Ship: Small box", "Ship: Large box"). Shipping for an order = price of
+   the biggest size in it + shop.shipping.extraItem for each item after the first. Items with no
+   size use shop.shipping.flat. Free when the subtotal reaches shop.shipping.freeOver.
+
    env: SITE_URL, ALLOWED_ORIGINS, SQUARE_ENV ("sandbox" | "production"), SQUARE_LOCATION_ID
    secrets: SQUARE_ACCESS_TOKEN, SIGNING_SECRET      bindings: FILES (R2) */
 
@@ -32,7 +37,7 @@ export default {
         return json({ products: products.filter(p => p.visible).map(publicProduct) }, 200, { ...cors, 'Cache-Control': `public, max-age=${PRODUCTS_TTL}` });
       }
       if (url.pathname === '/checkout' && req.method === 'POST') return json(await createCheckout(req, env), 200, cors);
-            if (url.pathname === '/subscribe' && req.method === 'POST') return json(await subscribe(req, env), 200, cors);
+      if (url.pathname === '/subscribe' && req.method === 'POST') return json(await subscribe(req, env), 200, cors);
       if (url.pathname === '/order' && req.method === 'GET') return json(await getOrder(url, env), 200, cors);
       if (url.pathname === '/download' && req.method === 'GET') return await download(url, env);
       return json({ error: 'Not found' }, 404, cors);
@@ -100,6 +105,7 @@ async function buildCatalog(env) {
     if (o.type === 'CATEGORY' && o.category_data) cats.set(o.id, o.category_data.name || '');
   }
   const mapping = (shop.categories || []).filter(c => c.square && c.page);
+  const sizes = shipSizes(shop);
   const websiteCat = norm(shop.websiteCategory);
   const files = new Map((shop.downloads || []).filter(d => d.item && d.file).map(d => [d.item, String(d.file)]));
   const atLocation = o => (o.present_at_all_locations !== false || (o.present_at_location_ids || []).includes(loc)) && !(o.absent_at_location_ids || []).includes(loc);
@@ -112,6 +118,7 @@ async function buildCatalog(env) {
     const catIds = [...(d.categories || []).map(c => c.id), d.category_id, d.reporting_category && d.reporting_category.id].filter(Boolean);
     const catNames = new Set(catIds.map(id => norm(cats.get(id))));
     const m = mapping.find(c => catNames.has(norm(c.square)));
+    const size = sizes.find(z => catNames.has(norm(z.square)));
     const variations = (d.variations || []).filter(v => !v.is_deleted && v.item_variation_data && atLocation(v)).map(v => {
       const vd = v.item_variation_data;
       const ov = (vd.location_overrides || []).find(x => x.location_id === loc) || {};
@@ -126,6 +133,7 @@ async function buildCatalog(env) {
       images: (d.image_ids || []).map(id => images.get(id)).filter(Boolean),
       page: m ? m.page : '', kind: m ? (m.kind || 'goods') : 'goods',
       file: files.get(o.id) || '',
+      ship: size ? size.label : '',
       variations,
       visible: !d.is_archived && atLocation(o) && !!m && (!websiteCat || catNames.has(websiteCat)) && variations.length > 0
     });
@@ -176,7 +184,7 @@ function stripHtml(s) {
 }
 
 const publicProduct = p => ({
-  id: p.id, name: p.name, description: p.description, images: p.images, page: p.page, kind: p.kind,
+  id: p.id, name: p.name, description: p.description, images: p.images, page: p.page, kind: p.kind, ship: p.ship,
   digitalReady: p.kind !== 'digital' || !!p.file,
   variations: p.variations.map(v => ({ id: v.id, name: v.name, price: v.price, soldOut: v.soldOut, max: v.track ? Math.min(MAX_QTY, v.stock) : MAX_QTY }))
 });
@@ -191,6 +199,7 @@ async function createCheckout(req, env) {
   const items = Array.isArray(body.items) ? body.items.slice(0, 50) : [];
   if (!items.length) throw new UserError('Your cart is empty.');
   let physical = false, treat = false, subtotal = 0;
+  const shipLines = [];
   const merged = new Map();
   for (const it of items) {
     const hit = cat.byVariation.get(String(it && it.variation));
@@ -205,7 +214,7 @@ async function createCheckout(req, env) {
     if (v.track && total > v.stock) throw new UserError(`Only ${v.stock} of ${label} left. Please lower the quantity.`);
     subtotal += v.price * (total - (merged.get(v.id) || 0));
     merged.set(v.id, total);
-    if (p.kind !== 'digital') physical = true;
+    if (p.kind !== 'digital') { physical = true; shipLines.push({ ship: p.ship, qty }); }
     if (p.kind === 'treat') treat = true;
   }
 
@@ -232,8 +241,7 @@ async function createCheckout(req, env) {
       if (!/^\d{5}(-\d{4})?$/.test(addr.postal_code)) throw new UserError('Please check your ZIP code.');
       if (treat && addr.administrative_district_level_1 !== 'SC') throw new UserError('Sweet treats can only be shipped within South Carolina. Choose local pickup, or remove the treats.');
       fulfillments = [{ type: 'SHIPMENT', state: 'PROPOSED', shipment_details: { recipient: { ...recipient, address: addr } } }];
-      const sh = shop.shipping || {};
-      const ship = (Number(sh.freeOver) > 0 && subtotal >= Math.round(Number(sh.freeOver) * 100)) ? 0 : Math.max(0, Math.round(Number(sh.flat || 0) * 100));
+      const ship = shippingCost(shop, shipLines, subtotal);
       if (ship) serviceCharges = [{ name: 'Shipping', amount_money: { amount: ship, currency: 'USD' }, calculation_phase: 'TOTAL_PHASE' }];
     } else {
       throw new UserError('Please choose pickup or shipping.');
@@ -266,6 +274,23 @@ async function createCheckout(req, env) {
     payment_link: { version: pl.version, checkout_options: { redirect_url: `${siteUrl(env)}/thank-you.html?t=${token}` } }
   });
   return { url: pl.url };
+}
+
+// Same rule as shop.js shows in the cart. Returns cents.
+function shipSizes(shop) {
+  const sh = shop.shipping || {};
+  return (Array.isArray(sh.sizes) ? sh.sizes : []).filter(z => z && z.square && z.label);
+}
+function shippingCost(shop, lines, subtotal) {
+  const sh = shop.shipping || {};
+  const cents = n => Math.max(0, Math.round((Number(n) || 0) * 100));
+  const count = lines.reduce((t, l) => t + l.qty, 0);
+  if (!count) return 0;
+  if (Number(sh.freeOver) > 0 && subtotal >= cents(sh.freeOver)) return 0;
+  const sizes = shipSizes(shop);
+  const priceOf = label => { const z = sizes.find(x => x.label === label); return z ? cents(z.price) : cents(sh.flat); };
+  const biggest = Math.max(...lines.map(l => priceOf(l.ship)));
+  return biggest + (count - 1) * cents(sh.extraItem);
 }
 
 function normalizePhone(s) {
@@ -369,4 +394,4 @@ async function download(url, env) {
     ...(obj.size != null ? { 'Content-Length': String(obj.size) } : {}) } });
 }
 
-export const _test = { sign, verify, normalizePhone, resetCache: () => { memo = null; } };
+export const _test = { sign, verify, normalizePhone, shippingCost, resetCache: () => { memo = null; } };

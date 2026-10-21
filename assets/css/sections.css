@@ -68,6 +68,7 @@
 .cn-row { display: grid; grid-template-columns: 2fr 1fr 1.3fr; gap: .5rem; }
 .cn-totals { display: grid; grid-template-columns: 1fr auto; gap: .3rem 1rem; margin: .6rem 0 0; }
 .cn-totals dd { margin: 0; text-align: right; }
+.cn-totals .cn-free-hint { grid-column: 1 / -1; text-align: left; font-size: .9em; font-style: italic; color: var(--muted, #7A6A5E); }
 .cn-checkout { width: 100%; justify-content: center; }
 .cn-cart-msg { color: #9b2c1d; font-weight: 600; }
 
