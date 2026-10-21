@@ -330,37 +330,38 @@ window.CN_DATA = {
         },
         {
           "type": "instagram",
-          "title": "Follow along on Instagram",
+          "title": "Follow along on Facebook",
           "items": [
             {
               "image": "assets/img/insta-1.jpg",
-              "link": "#"
+              "link": ""
             },
             {
               "image": "assets/img/insta-2.jpg",
-              "link": "#"
+              "link": ""
             },
             {
               "image": "assets/img/insta-3.jpg",
-              "link": "#"
+              "link": ""
             },
             {
               "image": "assets/img/insta-4.jpg",
-              "link": "#"
+              "link": ""
             },
             {
               "image": "assets/img/insta-5.jpg",
-              "link": "#"
+              "link": ""
             },
             {
               "image": "assets/img/insta-6.jpg",
-              "link": "#"
+              "link": ""
             },
             {
               "image": "assets/img/insta-7.jpg",
-              "link": "#"
+              "link": ""
             }
-          ]
+          ],
+          "link": "https://www.facebook.com/thecowsnestsc"
         },
         {
           "type": "trust",
@@ -588,6 +589,22 @@ window.CN_DATA = {
           "lede": "Home décor, handcrafted gifts, wreaths, jewelry and paper goods."
         },
         {
+          "type": "places",
+          "title": "Where to find our booths",
+          "intro": "",
+          "items": [
+            {
+              "name": "Pickensville Mercantile Co.",
+              "text": "Come visit our booth in downtown Easley.",
+              "address": "100 NW Main St, Suite B\nEasley, SC",
+              "map": true,
+              "website": "",
+              "websiteLabel": "Visit their page",
+              "image": "assets/img/uploads/845844726-122120304399445272-5528955592826344353-n-hhw19f.webp"
+            }
+          ]
+        },
+        {
           "type": "coming-soon",
           "image": "assets/img/uploads/845844726-122120304399445272-5528955592826344353-n-hhw19f.webp",
           "title": "100 NW Main St, Suite B, in downtown Easley, SC",
@@ -603,7 +620,8 @@ window.CN_DATA = {
               "link": "contact.html",
               "style": "outline"
             }
-          ]
+          ],
+          "hidden": true
         }
       ]
     },
@@ -1283,7 +1301,8 @@ window.CN_DATA = {
       "extraItem": 1,
       "flat": 8,
       "freeOver": 75,
-      "note": "Orders ship within 3–5 business days."
+      "note": "Orders ship within 3–5 business days.",
+      "lower48Only": true
     },
     "taxNote": "Sales tax is added at checkout."
   }

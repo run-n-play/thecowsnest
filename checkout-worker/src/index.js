@@ -5,6 +5,8 @@
                     -> Square-hosted payment link
    GET  /order      ?t=<signed order token>  paid order summary + signed download links
    GET  /download   ?t=<signed file token>   streams a digital product from R2 (7-day links)
+   POST /subscribe  email -> Square customer list ("Join the herd")
+   POST /square-webhook  Square payment events -> emails her each paid website order
 
    Which items show: in the "Website" category (shop.websiteCategory in data.js) AND in one of
    the categories mapped in shop.categories. The mapping also sets each item's page and rule
@@ -16,13 +18,18 @@
    size use shop.shipping.flat. Free when the subtotal reaches shop.shipping.freeOver.
 
    env: SITE_URL, ALLOWED_ORIGINS, SQUARE_ENV ("sandbox" | "production"), SQUARE_LOCATION_ID
-   secrets: SQUARE_ACCESS_TOKEN, SIGNING_SECRET      bindings: FILES (R2) */
+   secrets: SQUARE_ACCESS_TOKEN, SIGNING_SECRET, SQUARE_WEBHOOK_KEY
+   bindings: FILES (R2), ORDER_MAIL (Cloudflare send_email)
+   env for order emails: ORDER_EMAIL_TO, ORDER_EMAIL_FROM, WEBHOOK_URL */
 
 const SQUARE_VERSION = '2024-10-17';
 const PRODUCTS_TTL = 60;          // seconds the product list is cached
 const DOWNLOAD_DAYS = 7;
 const ORDER_LOOKUP_DAYS = 30;
 const MAX_QTY = 20;
+// Lower 48 states + DC (no Alaska, Hawaii, territories or military APO/FPO)
+const LOWER48 = new Set(('AL AZ AR CA CO CT DE DC FL GA ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY ' +
+  'NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY').split(' '));
 
 class UserError extends Error { constructor(msg, status = 400) { super(msg); this.status = status; } }
 
@@ -38,6 +45,7 @@ export default {
       }
       if (url.pathname === '/checkout' && req.method === 'POST') return json(await createCheckout(req, env), 200, cors);
       if (url.pathname === '/subscribe' && req.method === 'POST') return json(await subscribe(req, env), 200, cors);
+      if (url.pathname === '/square-webhook' && req.method === 'POST') return await squareWebhook(req, env);
       if (url.pathname === '/order' && req.method === 'GET') return json(await getOrder(url, env), 200, cors);
       if (url.pathname === '/download' && req.method === 'GET') return await download(url, env);
       return json({ error: 'Not found' }, 404, cors);
@@ -239,6 +247,8 @@ async function createCheckout(req, env) {
       if (!addr.address_line_1 || !addr.locality) throw new UserError('Please fill in your shipping address.');
       if (!/^[A-Z]{2}$/.test(addr.administrative_district_level_1)) throw new UserError('Please use the 2-letter state code, like SC.');
       if (!/^\d{5}(-\d{4})?$/.test(addr.postal_code)) throw new UserError('Please check your ZIP code.');
+      if (shop.shipping && shop.shipping.lower48Only !== false && !LOWER48.has(addr.administrative_district_level_1))
+        throw new UserError('Sorry, we only ship within the lower 48 states. Choose local pickup, or use an address in the lower 48.');
       if (treat && addr.administrative_district_level_1 !== 'SC') throw new UserError('Sweet treats can only be shipped within South Carolina. Choose local pickup, or remove the treats.');
       fulfillments = [{ type: 'SHIPMENT', state: 'PROPOSED', shipment_details: { recipient: { ...recipient, address: addr } } }];
       const ship = shippingCost(shop, shipLines, subtotal);
@@ -319,6 +329,99 @@ async function subscribe(req, env) {
   return { ok: true };
 }
 
+// ---------- POST /square-webhook: email her when a website order is paid ----------
+// Square Developer Dashboard -> Webhooks: URL https://shop.thecowsnest.com/square-webhook,
+// events payment.created + payment.updated. Its signature key -> secret SQUARE_WEBHOOK_KEY.
+async function squareWebhook(req, env) {
+  const body = await req.text();
+  if (!env.SQUARE_WEBHOOK_KEY) { console.error('SQUARE_WEBHOOK_KEY is not set'); return new Response('not set up', { status: 503 }); }
+  const url = env.WEBHOOK_URL || 'https://shop.thecowsnest.com/square-webhook';
+  if (!await squareSignatureOk(env.SQUARE_WEBHOOK_KEY, url + body, req.headers.get('x-square-hmacsha256-signature')))
+    return new Response('bad signature', { status: 403 });
+  let ev;
+  try { ev = JSON.parse(body); } catch { return new Response('bad json', { status: 400 }); }
+  const pay = ev && ev.data && ev.data.object && ev.data.object.payment;
+  if (pay && pay.status === 'COMPLETED' && pay.order_id) await notifyOrder(env, pay.order_id, pay);
+  return new Response('ok');
+}
+
+async function squareSignatureOk(key, payload, sig) {
+  if (!sig) return false;
+  const k = await crypto.subtle.importKey('raw', enc.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const mine = btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.sign('HMAC', k, enc.encode(payload)))));
+  if (mine.length !== sig.length) return false;
+  let diff = 0;
+  for (let i = 0; i < mine.length; i++) diff |= mine.charCodeAt(i) ^ sig.charCodeAt(i);
+  return diff === 0;
+}
+
+async function notifyOrder(env, orderId, pay) {
+  const { order } = await square(env, 'GET', `/v2/orders/${encodeURIComponent(orderId)}`);
+  if (!order || !String(order.reference_id || '').startsWith('web-')) return;   // in-person sale, not the website
+  if (order.metadata && order.metadata.notified) return;                          // already emailed
+  const { subject, text } = orderEmail(order, pay);
+  await sendMail(env, subject, text);
+  try {    // remember it was sent, so Square's repeat events don't email twice
+    await square(env, 'PUT', `/v2/orders/${encodeURIComponent(orderId)}`, {
+      idempotency_key: crypto.randomUUID(),
+      order: { location_id: order.location_id, version: order.version, metadata: { ...(order.metadata || {}), notified: new Date().toISOString() } }
+    });
+  } catch (e) { console.error('could not mark order notified', orderId, e && e.message); }
+}
+
+const usd = m => '$' + (((m && m.amount) || 0) / 100).toFixed(2);
+
+function orderEmail(order, pay) {
+  const ful = (order.fulfillments || [])[0];
+  const how = (order.metadata && order.metadata.fulfillment) || (ful ? (ful.type === 'SHIPMENT' ? 'ship' : 'pickup') : 'digital');
+  const d = ful && (ful.shipment_details || ful.pickup_details) || {};
+  const r = d.recipient || {};
+  const a = r.address || {};
+  const name = r.display_name || '';
+  const email = r.email_address || (pay && pay.buyer_email_address) || '';
+  const label = { ship: 'SHIP IT', pickup: 'LOCAL PICKUP', digital: 'Digital download' }[how] || how;
+  const L = [];
+  L.push(`New website order: ${label}`, '');
+  for (const li of order.line_items || [])
+    L.push(`  ${li.quantity} x ${li.name}${li.variation_name && li.variation_name !== 'Regular' ? ` (${li.variation_name})` : ''}   ${usd(li.total_money)}`);
+  L.push('');
+  if (order.total_service_charge_money && order.total_service_charge_money.amount) L.push(`Shipping charged: ${usd(order.total_service_charge_money)}`);
+  if (order.total_tax_money && order.total_tax_money.amount) L.push(`Sales tax: ${usd(order.total_tax_money)}`);
+  L.push(`TOTAL PAID: ${usd(order.total_money)}`, '');
+  if (how === 'ship') {
+    L.push('SHIP TO:', `  ${name}`, `  ${a.address_line_1 || ''}`);
+    if (a.address_line_2) L.push(`  ${a.address_line_2}`);
+    L.push(`  ${a.locality || ''}, ${a.administrative_district_level_1 || ''} ${a.postal_code || ''}`, '');
+  } else if (how === 'pickup') {
+    L.push(`PICKUP FOR: ${name}`, 'Text them when it is ready.', '');
+  }
+  if (r.phone_number) L.push(`Phone: ${r.phone_number}`);
+  if (email) L.push(`Email: ${email}`);
+  L.push('', `Square order: ${order.id}`, `Website order: ${order.reference_id}`, '',
+    how === 'ship' ? 'Buy the label in Pirate Ship (the order comes in from Square), or open it in Square:' : 'See it in Square:',
+    'https://app.squareup.com/dashboard/orders/overview');
+  const subject = `New order: ${how === 'ship' ? 'Ship to' : how === 'pickup' ? 'Pickup for' : 'Download for'} ${name || email || 'a customer'} - ${usd(order.total_money)}`;
+  return { subject, text: L.join('\n') };
+}
+
+async function sendMail(env, subject, text) {
+  if (!env.ORDER_MAIL || !env.ORDER_EMAIL_TO) { console.error('Order email is not set up (ORDER_MAIL / ORDER_EMAIL_TO). Not sent:', subject); return; }
+  const from = env.ORDER_EMAIL_FROM || 'orders@thecowsnest.com', to = env.ORDER_EMAIL_TO;
+  try {
+    await env.ORDER_MAIL.send({ from, to, subject, text });
+  } catch (first) {
+    // older binding style: a raw message
+    const { EmailMessage } = await import('cloudflare:email');
+    const b64 = t => btoa(String.fromCharCode(...enc.encode(t)));
+    const body = b64(text).replace(/.{76}/g, '$&\r\n');
+    const raw = [`From: The Cows Nest website <${from}>`, `To: ${to}`, `Subject: =?UTF-8?B?${b64(subject)}?=`,
+      `Date: ${new Date().toUTCString()}`, `Message-ID: <${crypto.randomUUID()}@thecowsnest.com>`, 'MIME-Version: 1.0',
+      'Content-Type: text/plain; charset=utf-8', 'Content-Transfer-Encoding: base64', '', body].join('\r\n');
+    try { await env.ORDER_MAIL.send(new EmailMessage(from, to, raw)); }
+    catch (second) { throw new Error(`Order email failed: ${first && first.message} / ${second && second.message}`); }
+  }
+}
+
 // ---------- GET /order ----------
 async function getOrder(url, env) {
   const t = await verify(env, url.searchParams.get('t'));
@@ -394,4 +497,4 @@ async function download(url, env) {
     ...(obj.size != null ? { 'Content-Length': String(obj.size) } : {}) } });
 }
 
-export const _test = { sign, verify, normalizePhone, shippingCost, resetCache: () => { memo = null; } };
+export const _test = { sign, verify, normalizePhone, shippingCost, squareSignatureOk, orderEmail, resetCache: () => { memo = null; } };

@@ -15,6 +15,9 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const paras = s => (CN().paras ? CN().paras(s) : `<p>${esc(s)}</p>`);
   const money = cents => '$' + ((Number(cents) || 0) / 100).toFixed(2);
+  const LOWER48 = new Set(('AL AZ AR CA CO CT DE DC FL GA ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY ' +
+    'NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY').split(' '));
+  const lower48Only = () => ((shop().shipping || {}).lower48Only !== false);
   const KIND_NOTE = {
     treat: 'Sweet treats are for local pickup or shipping within South Carolina only.',
     digital: 'Instant download right after you pay.'
@@ -248,6 +251,7 @@ ${c.lines.map((l, i) => `  <div class="cn-line${l.ok ? '' : ' is-gone'}">
       <div>${field('state', 'State', 'autocomplete="address-level1" maxlength="2"')}</div>
       <div>${field('postal', 'ZIP code', 'autocomplete="postal-code" inputmode="numeric" maxlength="10"')}</div>
     </div>
+    ${lower48Only() ? '<p class="cn-note">We ship within the lower 48 states only.</p>' : ''}
     ${c.treat ? '<p class="cn-note">Sweet treats can only be shipped to South Carolina addresses.</p>' : ''}
     ${s.shipping && s.shipping.note ? `<p class="cn-note">${esc(s.shipping.note)}</p>` : ''}` : ''}
   </div>` : '<p class="cn-note">Your downloads will be ready right after you pay.</p>'}
@@ -280,6 +284,7 @@ ${c.lines.map((l, i) => `  <div class="cn-line${l.ok ? '' : ' is-gone'}">
         if (!String(form[k]).trim()) return `Please enter ${label}.`;
       if (!/^[A-Za-z]{2}$/.test(form.state.trim())) return 'Please use the 2-letter state code, like SC.';
       if (!/^\d{5}(-\d{4})?$/.test(form.postal.trim())) return 'Please check your ZIP code.';
+      if (lower48Only() && !LOWER48.has(form.state.trim().toUpperCase())) return 'Sorry, we only ship within the lower 48 states. Choose local pickup, or use an address in the lower 48.';
       if (c.treat && form.state.trim().toUpperCase() !== 'SC') return 'Sweet treats can only be shipped within South Carolina. Choose local pickup, or remove the treats.';
     }
     return '';

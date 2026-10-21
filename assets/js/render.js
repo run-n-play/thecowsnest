@@ -21,6 +21,7 @@
   };
   const src = p => esc(IMG[p] || p || '');
   const sid = i => ` data-cn-section="${i}"`;
+  const ext = h => /^https?:/i.test(String(h || '')) ? ' target="_blank" rel="noopener"' : '';
 
   const SVG = (d, size = 16) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
   const ICONS = {
@@ -189,8 +190,34 @@ ${(s.items || []).map(c => `<article class="visit-card"><div class="body"><h3>${
   </div>
 </section>`,
 
-    instagram: (s, i) => titled(s, i, `<div class="insta-grid">
-${(s.items || []).map((p, n) => `<a href="${href(p.link)}" aria-label="Instagram post ${n + 1}"><img src="${src(p.image)}" alt="" width="125" height="118" loading="lazy"></a>`).join('\n')}
+    // Photo strip: each photo goes to its own link, or else the section's link (her Facebook page)
+    instagram: (s, i, ctx) => {
+      const fallback = String(s.link || '').trim() || ((ctx.site.social || {}).facebook) || '#';
+      const to = p => { const l = String(p.link || '').trim(); return l && l !== '#' ? l : fallback; };
+      return titled(s, i, `<div class="insta-grid">
+${(s.items || []).map((p, n) => `<a href="${href(to(p))}"${ext(to(p))} aria-label="${esc(s.title || 'Photo')} ${n + 1}"><img src="${src(p.image)}" alt="" width="125" height="118" loading="lazy"></a>`).join('\n')}
+  </div>`);
+    },
+
+    // Places: vendor booths, the stand, markets. Google map + directions + their website.
+    places: (s, i) => titled(s, i, `${s.intro ? `<div class="cn-text cn-center">${paras(s.intro)}</div>` : ''}
+  <div class="places">
+${(s.items || []).map(p => {
+      const addr = String(p.address || '').trim(), q = encodeURIComponent(addr.replace(/\s*\n\s*/g, ', '));
+      const site = String(p.website || '').trim();
+      return `<article class="place-card">
+    ${p.image ? `<img class="place-img" src="${src(p.image)}" alt="" width="600" height="450" loading="lazy">` : ''}
+    <div class="place-body">
+      <h3>${esc(p.name)}</h3>
+      ${paras(p.text)}
+      ${addr ? `<p class="place-addr">${lines(addr)}</p>` : ''}
+      <div class="actions">
+        ${addr ? `<a class="btn btn-small" href="https://www.google.com/maps/dir/?api=1&amp;destination=${q}" target="_blank" rel="noopener">Get directions</a>` : ''}
+        ${site ? `<a class="btn btn-small btn-outline" href="${href(site)}"${ext(site)}>${esc(p.websiteLabel || 'Visit their page')}</a>` : ''}
+      </div>
+    </div>
+    ${addr && p.map !== false ? `<iframe class="place-map" title="Map of ${esc(p.name || addr)}" src="https://maps.google.com/maps?q=${q}&amp;z=15&amp;output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>` : ''}
+  </article>`; }).join('\n')}
   </div>`),
 
     trust: (s, i) => `<section class="trust" aria-label="Why shop with us"${sid(i)}>

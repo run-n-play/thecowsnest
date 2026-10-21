@@ -187,16 +187,36 @@
         signupTitle: 'Join the herd!', signupText: '', signupButton: 'Sign me up!' })
     },
     instagram: {
-      name: 'Instagram photos', blurb: 'A strip of square photos that link to Instagram posts.',
+      name: 'Photo strip', blurb: 'A row of small square photos. Clicking one opens your Facebook page (or its own link).',
       title: s => s.title,
       fields: [
         F.text('title', 'Heading'),
+        F.text('link', 'Photos go to', 'Your Facebook page address. Leave empty to use the Facebook link from Menu, footer, logo & social links.'),
         { t: 'list', k: 'items', l: 'Photos', itemName: 'photo',
           item: { t: 'group', fields: [F.img('image', 'Photo', { ratio: 125 / 118, width: 600 }),
-            F.text('link', 'Instagram post web address', 'Open the post on Instagram, copy the address bar, paste it here.')] },
-          make: () => ({ image: '', link: '#' }) }
+            F.text('link', 'Its own link (optional)', 'To open one exact post: open it on Facebook, copy the address bar, paste it here. Leave empty to use the link above.')] },
+          make: () => ({ image: '', link: '' }) }
       ],
-      make: () => ({ type: 'instagram', title: 'Follow along on Instagram', items: [] })
+      make: () => ({ type: 'instagram', title: 'Follow along on Facebook', link: '', items: [] })
+    },
+    places: {
+      name: 'Places with maps', blurb: 'Cards for places to find you, like vendor booths, the stand or markets. Each one can show a Google map, a Get directions button, and a link to that place\u2019s page.',
+      title: s => s.title || (s.items || []).map(p => p.name).join(', '),
+      fields: [
+        F.text('title', 'Heading', 'Leave empty for no heading.'),
+        F.area('intro', 'Words above the cards (optional)', PARAS),
+        { t: 'list', k: 'items', l: 'Places', itemName: 'place',
+          item: { t: 'group', fields: [
+            F.text('name', 'Name', 'For example: Easley Antique Mall'),
+            F.area('text', 'Words', 'Hours, booth number, what you sell there. ' + PARAS),
+            F.area('address', 'Address', 'Street, town and state. The map and directions use this. Leave empty for no map.'),
+            F.check('map', 'Show a Google map'),
+            F.text('website', 'Their website or Facebook page (optional)', 'Paste the full address, starting with https://'),
+            F.text('websiteLabel', 'Words on that button', 'For example: Visit their page'),
+            F.img('image', 'Picture (optional)', { ratio: 4 / 3, width: 1200 })] },
+          make: () => ({ name: 'New place', text: '', address: '', map: true, website: '', websiteLabel: 'Visit their page', image: '' }) }
+      ],
+      make: () => ({ type: 'places', title: 'Where to find us', intro: '', items: [] })
     },
     trust: {
       name: 'Promise icons', blurb: 'The strip of small icons near the bottom (Handmade in small batches, and so on).',
@@ -705,6 +725,7 @@
     const shipBox = h('div', { class: 'box' },
       h('h3', { class: 'box-title' }, 'Shipping'),
       fieldEl(F.check('enabled', 'Offer shipping'), sh),
+      fieldEl(F.check('lower48Only', 'Ship to the lower 48 states only (no Alaska, Hawaii, territories or military addresses)'), sh),
       h('p', { class: 'hint' }, 'An order pays for its biggest size, plus a little for each extra item.'),
       ...sizesOf().map(z => priceRow(z, 'price', z.label)),
       priceRow(sh, 'extraItem', 'Each extra item adds', 'Put 0 for no extra charge.'),
@@ -1046,7 +1067,7 @@
     data.shop.shipping = Object.assign({ sizes: [
       { label: 'Envelope', square: 'Ship: Envelope', price: 5 },
       { label: 'Small box', square: 'Ship: Small box', price: 10 },
-      { label: 'Large box', square: 'Ship: Large box', price: 18 }], extraItem: 1 }, data.shop.shipping || {});
+      { label: 'Large box', square: 'Ship: Large box', price: 18 }], extraItem: 1, lower48Only: true }, data.shop.shipping || {});
     if (data.site.social) delete data.site.social.pinterest;
     if (!data.pages.index) data.pages.index = { title: 'The Cows Nest', description: '', sections: [] };
 

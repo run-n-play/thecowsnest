@@ -85,3 +85,19 @@
   .cn-line-total { grid-column: 3; grid-row: 1; }
   .cn-line .cn-link { grid-column: 3; }
 }
+
+/* Places: booths, stand, markets — map + directions + their page */
+.places { display: grid; gap: 22px; }
+.place-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); background: #fff; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.place-card .place-img { grid-column: 1 / -1; width: 100%; height: 220px; object-fit: contain; background: #fff; padding: 12px; border-bottom: 1px solid var(--line); }
+.place-body { padding: 24px; display: flex; flex-direction: column; gap: 10px; }
+.place-body h3 { margin: 0; font-family: var(--serif-display); font-weight: 400; font-size: 19px; letter-spacing: .08em; text-transform: uppercase; }
+.place-body p { margin: 0; line-height: 1.5; color: var(--ink-soft); }
+.place-addr { font-style: italic; }
+.place-body .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: auto; padding-top: 6px; }
+.place-map { width: 100%; height: 100%; min-height: 260px; border: 0; border-left: 1px solid var(--line); }
+.place-card:not(:has(.place-map)) { grid-template-columns: 1fr; }
+@media (max-width: 760px) {
+  .place-card { grid-template-columns: 1fr; }
+  .place-map { border-left: 0; border-top: 1px solid var(--line); min-height: 240px; }
+}
