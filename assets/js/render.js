@@ -279,7 +279,8 @@ ${(s.items || []).map(g => `<figure><img src="${src(g.image)}" alt="${esc(g.capt
       render(e.data.data, slug, { productId: e.data.productId });
       if (e.data.scrollTo != null) {
         const el = document.querySelector(`[data-cn-section="${e.data.scrollTo}"]`);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // scroll only this frame; scrollIntoView would also scroll the editor page around it on phones
+        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY, behavior: 'smooth' });
       }
     });
     // In the editor preview: links don't navigate; clicking a section opens it in the editor.

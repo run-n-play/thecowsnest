@@ -1,6 +1,6 @@
 /* The Cows Nest – site content. Edited with /admin. */
 window.CN_DATA = {
-  "updated": "2026-10-21T01:58:35.071Z",
+  "updated": "2026-10-05T11:24:32.144Z",
   "site": {
     "topbar": "Curated For The Heart and home",
     "taglineScript": "Conversations Over the Picket Fence",
@@ -14,8 +14,8 @@ window.CN_DATA = {
     "footerLogo": "assets/img/logo-small.webp",
     "email": "thecowsnestsc@gmail.com",
     "social": {
-      "facebook": "https://www.facebook.com/thecowsnestsc",
-      "instagram": "https://www.instagram.com/thecowsnestsc/",
+      "facebook": "#",
+      "instagram": "#",
       "pinterest": "#",
       "tiktok": "https://www.tiktok.com/@thecowsnestsc/"
     },
@@ -253,10 +253,10 @@ window.CN_DATA = {
               "link": "paper-goods.html"
             },
             {
-              "title": "Art Prints",
-              "text": "Original prints, ready to frame",
-              "image": "assets/img/uploads/20260917-132726-hgk4bl.webp",
-              "link": "art-prints.html"
+              "title": "Sweet Treats & Goodies",
+              "text": "Baked goods, popcorn, snacks & mixes",
+              "image": "assets/img/cat-treats.jpg",
+              "link": "sweet-treats.html"
             },
             {
               "title": "Apparel & Accessories",
@@ -1211,8 +1211,7 @@ window.CN_DATA = {
     }
   },
   "shop": {
-    "checkoutUrl": "https://shop.thecowsnest.com",
-    "websiteCategory": "Website",
+    "checkoutUrl": "",
     "categories": [
       {
         "label": "Handmade Goods",
