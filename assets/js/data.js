@@ -421,31 +421,15 @@ window.CN_DATA = {
     },
     "search": {
       "title": "Search the Nest | The Cows Nest",
-      "description": "Search results will show here.",
+      "description": "Search The Cows Nest shop.",
       "sections": [
         {
           "type": "page-hero",
           "heading": "Search the Nest",
-          "lede": "Search results will show here.",
-          "searchTerm": true
+          "lede": ""
         },
         {
-          "type": "coming-soon",
-          "image": "assets/img/icon-bird.jpg",
-          "title": "This page is coming soon",
-          "text": "We're still setting this part of the nest up. In the meantime, have a look around the rest of the shop.",
-          "buttons": [
-            {
-              "label": "Back to home",
-              "link": "index.html",
-              "style": "solid"
-            },
-            {
-              "label": "Contact us",
-              "link": "contact.html",
-              "style": "outline"
-            }
-          ]
+          "type": "search-results"
         }
       ]
     },
@@ -664,22 +648,7 @@ window.CN_DATA = {
           "lede": "Save your favorite finds for later."
         },
         {
-          "type": "coming-soon",
-          "image": "assets/img/icon-heart.jpg",
-          "title": "This page is coming soon",
-          "text": "We're still setting this part of the nest up. In the meantime, have a look around the rest of the shop.",
-          "buttons": [
-            {
-              "label": "Back to home",
-              "link": "index.html",
-              "style": "solid"
-            },
-            {
-              "label": "Contact us",
-              "link": "contact.html",
-              "style": "outline"
-            }
-          ]
+          "type": "wishlist"
         }
       ]
     },
@@ -1107,35 +1076,6 @@ window.CN_DATA = {
         {
           "type": "coming-soon",
           "image": "assets/img/icon-heart2.jpg",
-          "title": "This page is coming soon",
-          "text": "We're still setting this part of the nest up. In the meantime, have a look around the rest of the shop.",
-          "buttons": [
-            {
-              "label": "Back to home",
-              "link": "index.html",
-              "style": "solid"
-            },
-            {
-              "label": "Contact us",
-              "link": "contact.html",
-              "style": "outline"
-            }
-          ]
-        }
-      ]
-    },
-    "account": {
-      "title": "My Account | The Cows Nest",
-      "description": "Sign in to see your orders and saved details.",
-      "sections": [
-        {
-          "type": "page-hero",
-          "heading": "My Account",
-          "lede": "Sign in to see your orders and saved details."
-        },
-        {
-          "type": "coming-soon",
-          "image": "assets/img/icon-bird.jpg",
           "title": "This page is coming soon",
           "text": "We're still setting this part of the nest up. In the meantime, have a look around the rest of the shop.",
           "buttons": [

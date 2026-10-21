@@ -7,6 +7,7 @@
   if (window.__cnShop) return; window.__cnShop = true;
 
   const KEY = 'cn-cart-v2';
+  const WISH_KEY = 'cn-wish-v1';
   const FORM_KEY = 'cn-checkout';
   const CN = () => window.CN || {};
   const data = () => CN().data || window.CN_DATA || {};
@@ -56,12 +57,22 @@
   const form = Object.assign({ fulfillment: '', name: '', email: '', phone: '', line1: '', line2: '', city: '', state: 'SC', postal: '' }, read(sessionStorage, FORM_KEY, {}));
   const saveForm = () => write(sessionStorage, FORM_KEY, form);
 
+  // ---------- wishlist (saved in this browser; no login) ----------
+  let memWish = null;
+  const loadWish = () => { const w = memWish || read(localStorage, WISH_KEY, []); return Array.isArray(w) ? w.filter(x => typeof x === 'string') : []; };
+  const saveWish = w => { memWish = w; write(localStorage, WISH_KEY, w); updateHeader(); };
+  const inWish = id => loadWish().includes(id);
+  const heartBtn = id => `<button type="button" class="cn-wish-btn" data-wish="${esc(id)}" aria-pressed="${inWish(id)}">${inWish(id) ? '\u2665 Saved to wishlist' : '\u2661 Save to wishlist'}</button>`;
+
   function updateHeader() {
     const n = loadCart().reduce((t, l) => t + l.qty, 0);
-    document.querySelectorAll('.account-links a[href="cart.html"]').forEach(a => {
+    const w = loadWish().length;
+    const setCount = (sel, word, num) => document.querySelectorAll(`.account-links a[href="${sel}"]`).forEach(a => {
       const t = [...a.childNodes].reverse().find(x => x.nodeType === 3);
-      if (t) t.textContent = `Cart (${n})`;
+      if (t) t.textContent = `${word} (${num})`;
     });
+    setCount('cart.html', 'Cart', n);
+    setCount('wishlist.html', 'Wishlist', w);
   }
 
   // ---------- product grids ----------
@@ -81,9 +92,10 @@
       return;
     }
     if (section) section.hidden = false;
-    el.innerHTML = list.map(p => `<a class="cn-product-card" href="product.html?id=${encodeURIComponent(p.id)}">${p.images[0]
-      ? `<img src="${esc(p.images[0])}" alt="" width="600" height="600" loading="lazy">` : '<span class="cn-noimg" aria-hidden="true"></span>'}<span class="cn-pc-name">${esc(p.name)}</span><span class="cn-pc-price">${allSold(p) ? '<span class="cn-badge">Sold out</span>' : esc(priceText(p))}</span></a>`).join('\n');
+    el.innerHTML = list.map(card).join('\n');
   }
+  const card = p => `<a class="cn-product-card" href="product.html?id=${encodeURIComponent(p.id)}">${p.images[0]
+      ? `<img src="${esc(p.images[0])}" alt="" width="600" height="600" loading="lazy">` : '<span class="cn-noimg" aria-hidden="true"></span>'}<span class="cn-pc-name">${esc(p.name)}</span><span class="cn-pc-price">${allSold(p) ? '<span class="cn-badge">Sold out</span>' : esc(priceText(p))}</span></a>`;
 
   // ---------- product page ----------
   function setMeta(desc) { const m = document.querySelector('meta[name="description"]'); if (m) m.content = desc; }
@@ -127,6 +139,7 @@
         <button class="btn" type="submit"${blocked ? ' disabled' : ''}>${sold ? 'Sold out' : notReady(p) ? 'Available soon' : 'Add to cart'}</button>
         <p class="cn-add-note" role="status"></p>
       </form>
+      ${heartBtn(p.id)}
       ${KIND_NOTE[p.kind] ? `<p class="cn-kind-note">${KIND_NOTE[p.kind]}</p>` : ''}
     </div>
   </div>`;
@@ -166,6 +179,21 @@
   });
 
   document.addEventListener('click', e => {
+    const hb = e.target.closest && e.target.closest('[data-wish]');
+    if (hb) {
+      if (CN().preview) return;
+      const id = hb.dataset.wish, w = loadWish();
+      const on = !w.includes(id);
+      saveWish(on ? [...w, id] : w.filter(x => x !== id));
+      hb.setAttribute('aria-pressed', on); hb.textContent = on ? '\u2665 Saved to wishlist' : '\u2661 Save to wishlist';
+      return;
+    }
+    const rb = e.target.closest && e.target.closest('[data-unwish]');
+    if (rb) {
+      saveWish(loadWish().filter(x => x !== rb.dataset.unwish));
+      document.querySelectorAll('[data-shop="wishlist"]').forEach(renderWishlist);
+      return;
+    }
     const b = e.target.closest && e.target.closest('[data-cn-thumb]');
     if (!b) return;
     const main = b.closest('.cn-gallery-main').querySelector('.cn-main-img');
@@ -334,6 +362,40 @@ ${c.lines.map((l, i) => `  <div class="cn-line${l.ok ? '' : ' is-gone'}">
     });
   }
 
+  // ---------- wishlist page ----------
+  async function renderWishlist(el) {
+    const ids = loadWish();
+    if (!ids.length) {
+      el.innerHTML = `<p class="cn-empty">${CN().preview ? 'Shoppers see the items they saved here.' : 'Your wishlist is empty. Tap \u201cSave to wishlist\u201d on any item to keep it here.'}</p><p style="text-align:center"><a class="btn" href="shop.html">Go shopping</a></p>`;
+      return;
+    }
+    const map = await loadProducts();
+    if (!map || map === 'error') { el.innerHTML = '<p class="cn-empty">The shop could not be reached right now. Please refresh in a minute.</p>'; return; }
+    const items = ids.map(id => map.get(id)).filter(Boolean);
+    if (items.length !== ids.length) saveWish(items.map(p => p.id));   // drop items no longer in the shop
+    if (!items.length) { el.innerHTML = '<p class="cn-empty">The items you saved are no longer in the shop.</p><p style="text-align:center"><a class="btn" href="shop.html">Go shopping</a></p>'; return; }
+    el.innerHTML = `<div class="cn-products">${items.map(p => `<div class="cn-wish-item">${card(p)}<button type="button" class="cn-link" data-unwish="${esc(p.id)}">Remove</button></div>`).join('\n')}</div>
+<p class="cn-note" style="text-align:center">Your wishlist is saved on this device.</p>`;
+  }
+
+  // ---------- search page ----------
+  async function renderSearch(el) {
+    const q = (new URLSearchParams(location.search).get('q') || '').trim();
+    if (!q) { el.innerHTML = `<p class="cn-empty">${CN().preview ? 'Search results show here.' : 'Type what you\u2019re looking for in the search box at the top.'}</p>`; return; }
+    const map = await loadProducts();
+    if (!map || map === 'error') { el.innerHTML = '<p class="cn-empty">The shop could not be reached right now. Please refresh in a minute.</p>'; return; }
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+    const catLabel = p => ((shop().categories || []).find(c => c.page === p.page) || {}).label || '';
+    const scored = [...map.values()].map(p => {
+      const name = p.name.toLowerCase(), rest = `${p.description} ${catLabel(p)} ${p.variations.map(v => v.name).join(' ')}`.toLowerCase();
+      if (!words.every(w => name.includes(w) || rest.includes(w))) return null;
+      return { p, score: words.filter(w => name.includes(w)).length };
+    }).filter(Boolean).sort((a, b) => b.score - a.score || a.p.name.localeCompare(b.p.name));
+    el.innerHTML = `<h2 class="section-title">${scored.length} ${scored.length === 1 ? 'result' : 'results'} for \u201c${esc(q)}\u201d</h2>`
+      + (scored.length ? `<div class="cn-products">${scored.map(x => card(x.p)).join('\n')}</div>`
+        : '<p class="cn-empty">Nothing matched. Try a shorter word, or browse the shop.</p><p style="text-align:center"><a class="btn" href="shop.html">Browse the shop</a></p>');
+  }
+
   // ---------- thank-you page ----------
   async function renderOrder(el) {
     if (el.dataset.loaded) return;
@@ -401,9 +463,14 @@ ${o.downloads && o.downloads.length ? `<h2>Your downloads</h2>
     document.querySelectorAll('[data-shop="grid"]').forEach(fillGrid);
     document.querySelectorAll('[data-shop="product"]').forEach(fillProduct);
     document.querySelectorAll('[data-shop="order"]').forEach(renderOrder);
+    document.querySelectorAll('[data-shop="wishlist"]').forEach(renderWishlist);
+    document.querySelectorAll('[data-shop="search"]').forEach(renderSearch);
   }
   document.addEventListener('cn:rendered', refresh);
-  window.addEventListener('storage', e => { if (e.key === KEY) { memCart = null; refreshCart(); } });
+  window.addEventListener('storage', e => {
+    if (e.key === KEY) { memCart = null; refreshCart(); }
+    if (e.key === WISH_KEY) { memWish = null; updateHeader(); document.querySelectorAll('[data-shop="wishlist"]').forEach(renderWishlist); }
+  });
   window.addEventListener('pageshow', ev => { if (ev.persisted) { memCart = null; productsPromise = null; refresh(); } });
   refresh();
 })();

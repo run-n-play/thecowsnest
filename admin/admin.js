@@ -99,6 +99,14 @@
       system: true, name: 'Shopping cart', blurb: 'The cart and Check out button. Pickup and shipping choices come from Pickup, shipping & categories.',
       title: () => '', fields: [], make: () => ({ type: 'cart' })
     },
+    wishlist: {
+      system: true, name: 'Wishlist', blurb: 'Shows the items a shopper saved with the \u2661 Save to wishlist button. It fills in by itself, and is saved on their own phone or computer.',
+      title: () => '', fields: [], make: () => ({ type: 'wishlist' })
+    },
+    'search-results': {
+      system: true, name: 'Search results', blurb: 'Shows the products that match what someone typed in the search box at the top. It fills in by itself from Square.',
+      title: () => '', fields: [], make: () => ({ type: 'search-results' })
+    },
     'order-confirmation': {
       system: true, name: 'Order details', blurb: 'After someone pays, this shows what they bought, pickup or shipping info, and their download links.',
       title: () => '', fields: [], make: () => ({ type: 'order-confirmation' })

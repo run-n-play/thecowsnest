@@ -101,3 +101,11 @@
   .place-card { grid-template-columns: 1fr; }
   .place-map { border-left: 0; border-top: 1px solid var(--line); min-height: 240px; }
 }
+
+/* wishlist + search */
+.cn-wish-btn { margin-top: .8rem; background: none; border: 1px solid var(--line); border-radius: 999px; padding: .45rem 1rem; font: inherit; font-size: .95rem; color: var(--teal-dark); cursor: pointer; }
+.cn-wish-btn:hover { border-color: var(--teal); }
+.cn-wish-btn[aria-pressed="true"] { color: var(--coral); border-color: var(--coral); }
+.cn-wish-item { display: flex; flex-direction: column; gap: .3rem; }
+.cn-wish-item .cn-link { align-self: flex-start; font-size: .9rem; }
+.cn-search .section-title { margin-bottom: 1.2rem; }

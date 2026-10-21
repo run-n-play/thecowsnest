@@ -66,13 +66,12 @@
     <div class="utilities">
       <div class="socials">${socials(site.social)}</div>
       <div class="account-links">
-        <a href="account.html">My account</a><span class="sep" aria-hidden="true">|</span>
         <a href="wishlist.html">Wishlist</a><span class="sep" aria-hidden="true">|</span>
         <a href="cart.html">${SVG('<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.5 12h11.5l2-8H6.5"/>', 18)}Cart (0)</a>
       </div>
       <form class="search-form" action="search.html" method="get" role="search">
         <label class="visually-hidden" for="q">Search the nest</label>
-        <input id="q" name="q" type="search" placeholder="Search the nest…">
+        <input id="q" name="q" type="search" placeholder="Search the nest…" value="${esc(slug === 'search' ? new URLSearchParams(location.search).get('q') || '' : '')}">
         <button type="submit" aria-label="Search">${SVG('<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>', 18)}</button>
       </form>
     </div>
@@ -250,6 +249,10 @@ ${(s.items || []).map(g => `<figure><img src="${src(g.image)}" alt="${esc(g.capt
     'product-detail': (s, i) => `<section class="section wrap cn-product"${sid(i)}><div data-shop="product"><p class="cn-empty">Loading…</p></div></section>`,
 
     cart: (s, i) => `<section class="section wrap"${sid(i)}><div class="cn-cart" data-shop="cart"><p class="cn-empty">Loading your cart…</p></div></section>`,
+
+    wishlist: (s, i) => `<section class="section wrap"${sid(i)}><div class="cn-wishlist" data-shop="wishlist"><p class="cn-empty">Loading your wishlist…</p></div></section>`,
+
+    'search-results': (s, i) => `<section class="section wrap"${sid(i)}><div class="cn-search" data-shop="search"><p class="cn-empty">Searching…</p></div></section>`,
 
     'order-confirmation': (s, i) => `<section class="section wrap"${sid(i)}><div class="cn-order" data-shop="order"><p class="cn-empty">Loading your order…</p></div></section>`,
   };
