@@ -1,6 +1,6 @@
 /* The Cows Nest – site content. Edited with /admin. */
 window.CN_DATA = {
-  "updated": "2026-10-21T02:05:39.713Z",
+  "updated": "2026-10-21T02:33:06.120Z",
   "site": {
     "topbar": "Curated For The Heart and home",
     "taglineScript": "Conversations Over the Picket Fence",
@@ -590,9 +590,9 @@ window.CN_DATA = {
         },
         {
           "type": "coming-soon",
-          "image": "assets/img/visit-booth.jpg",
-          "title": "This page is coming soon",
-          "text": "We're still setting this part of the nest up. In the meantime, have a look around the rest of the shop.",
+          "image": "assets/img/uploads/845844726-122120304399445272-5528955592826344353-n-hhw19f.webp",
+          "title": "100 NW Main St, Suite B, in downtown Easley, SC",
+          "text": "Come visit us at the Booth ",
           "buttons": [
             {
               "label": "Back to home",
