@@ -32,6 +32,7 @@ export default {
         return json({ products: products.filter(p => p.visible).map(publicProduct) }, 200, { ...cors, 'Cache-Control': `public, max-age=${PRODUCTS_TTL}` });
       }
       if (url.pathname === '/checkout' && req.method === 'POST') return json(await createCheckout(req, env), 200, cors);
+            if (url.pathname === '/subscribe' && req.method === 'POST') return json(await subscribe(req, env), 200, cors);
       if (url.pathname === '/order' && req.method === 'GET') return json(await getOrder(url, env), 200, cors);
       if (url.pathname === '/download' && req.method === 'GET') return await download(url, env);
       return json({ error: 'Not found' }, 404, cors);
@@ -272,6 +273,25 @@ function normalizePhone(s) {
   if (d.length === 10) return '+1' + d;
   if (d.length === 11 && d[0] === '1') return '+' + d;
   return '';
+}
+
+// ---------- POST /subscribe ----------
+async function subscribe(req, env) {
+  let body;
+  try { body = await req.json(); } catch { throw new UserError('Bad request.'); }
+  const email = String(body.email || '').trim().toLowerCase().slice(0, 254);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new UserError('Please enter a valid email address.');
+  const found = await square(env, 'POST', '/v2/customers/search', {
+    query: { filter: { email_address: { exact: email } } }, limit: 1
+  });
+  if (!(found.customers && found.customers.length)) {
+    await square(env, 'POST', '/v2/customers', {
+      idempotency_key: crypto.randomUUID(),
+      email_address: email,
+      note: 'Joined the herd on thecowsnest.com'
+    });
+  }
+  return { ok: true };
 }
 
 // ---------- GET /order ----------
