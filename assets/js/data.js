@@ -1,6 +1,6 @@
 /* The Cows Nest – site content. Edited with /admin. */
 window.CN_DATA = {
-  "updated": "2026-10-05T11:24:32.144Z",
+  "updated": "2026-10-21T02:05:39.713Z",
   "site": {
     "topbar": "Curated For The Heart and home",
     "taglineScript": "Conversations Over the Picket Fence",
@@ -243,13 +243,13 @@ window.CN_DATA = {
             {
               "title": "Handmade Goods",
               "text": "Crafts, décor, gifts & more",
-              "image": "assets/img/uploads/20261014-201734-hgapvb.webp",
+              "image": "assets/img/uploads/20261014-201734-hgapvb-hgytyx.webp",
               "link": "handmade-goods.html"
             },
             {
               "title": "Paper Goods & Printables",
               "text": "Notepads, recipe cards, art prints & more",
-              "image": "assets/img/uploads/20260906-190215-hgh68e.webp",
+              "image": "assets/img/uploads/20260906-190215-hgh68e-hgzdbt.webp",
               "link": "paper-goods.html"
             },
             {
@@ -267,7 +267,7 @@ window.CN_DATA = {
             {
               "title": "Jewelry & Small Finds",
               "text": "Handmade jewelry, charms & treasures",
-              "image": "assets/img/uploads/20261016-101548-hgoehg.webp",
+              "image": "assets/img/uploads/20261016-101548-hgzjnp.webp",
               "link": "jewelry.html"
             },
             {
@@ -279,7 +279,7 @@ window.CN_DATA = {
             {
               "title": "Seasonal Collections",
               "text": "New finds for every season",
-              "image": "assets/img/uploads/20261016-101555-hgqly0.webp",
+              "image": "assets/img/uploads/20261016-101555-hgzv92.webp",
               "link": "seasonal.html"
             }
           ]
@@ -1212,6 +1212,7 @@ window.CN_DATA = {
   },
   "shop": {
     "checkoutUrl": "",
+    "websiteCategory": "Website",
     "categories": [
       {
         "label": "Handmade Goods",
