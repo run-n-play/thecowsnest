@@ -1,0 +1,3 @@
+Cows Nest website changes – 10/20/2026, 9:58:35 PM
+Unzip at the root of the repo (overwrite), then commit.
+New pictures: 5
