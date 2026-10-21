@@ -1211,7 +1211,7 @@ window.CN_DATA = {
     }
   },
   "shop": {
-    "checkoutUrl": "",
+       "checkoutUrl": "https://shop.thecowsnest.com",
     "websiteCategory": "Website",
     "categories": [
       {
