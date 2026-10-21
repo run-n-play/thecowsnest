@@ -345,6 +345,32 @@ ${o.downloads && o.downloads.length ? `<h2>Your downloads</h2>
     }
   }
 
+    // ---------- "Join the herd" sign-up -> Square customer list ----------
+  document.addEventListener('submit', async e => {
+    const f = e.target.closest && e.target.closest('form.signup');
+    if (!f) return;
+    e.preventDefault(); e.stopPropagation();
+    if (CN().preview) return;
+    const note = f.querySelector('.form-note');
+    const input = f.querySelector('input[type="email"]');
+    const btn = f.querySelector('button[type="submit"]');
+    const email = (input.value || '').trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { note.textContent = 'Please enter a valid email address.'; input.focus(); return; }
+    if (!api()) { note.textContent = 'Sign-up isn\u2019t open yet. Please try again soon.'; return; }
+    btn.disabled = true; note.textContent = 'Signing you up…';
+    try {
+      const res = await fetch(api() + '/subscribe', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(out.error || 'Something went wrong. Please try again.');
+      f.reset(); note.textContent = 'Thanks, you\u2019re on the list!';
+    } catch (err) {
+      note.textContent = err.message === 'Failed to fetch' ? 'Could not reach us. Check your connection and try again.' : err.message;
+    } finally { btn.disabled = false; }
+  }, true);
+  
   // ---------- wiring ----------
   function refreshCart() {
     updateHeader();
