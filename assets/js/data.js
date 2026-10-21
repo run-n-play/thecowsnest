@@ -1,6 +1,6 @@
 /* The Cows Nest – site content. Edited with /admin. */
 window.CN_DATA = {
-  "updated": "2026-10-21T02:33:06.120Z",
+  "updated": "2026-10-21T02:37:55.868Z",
   "site": {
     "topbar": "Curated For The Heart and home",
     "taglineScript": "Conversations Over the Picket Fence",
@@ -1030,22 +1030,22 @@ window.CN_DATA = {
           "lede": "We'd love to hear from you."
         },
         {
-          "type": "coming-soon",
-          "image": "assets/img/icon-nest.jpg",
-          "title": "This page is coming soon",
-          "text": "We're still setting this part of the nest up. In the meantime, have a look around the rest of the shop.",
-          "buttons": [
-            {
-              "label": "Back to home",
-              "link": "index.html",
-              "style": "solid"
-            },
-            {
-              "label": "Contact us",
-              "link": "contact.html",
-              "style": "outline"
-            }
-          ]
+          "type": "daisy-pip",
+          "meetTitle": "Meet Daisy & Pip",
+          "meetText": "",
+          "meetButton": "",
+          "meetLink": "daisy-and-pip.html",
+          "meetImage": "",
+          "meetImageAlt": "",
+          "chatTitle": "Conversations\nOver the Picket Fence",
+          "chatText": "",
+          "chatButton": "",
+          "chatLink": "conversations.html",
+          "chatImage": "",
+          "chatImageAlt": "",
+          "signupTitle": "Join the herd!",
+          "signupText": "",
+          "signupButton": "Sign me up!"
         }
       ]
     },
