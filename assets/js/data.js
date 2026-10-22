@@ -1,6 +1,6 @@
 /* The Cows Nest – site content. Edited with /admin. */
 window.CN_DATA = {
-  "updated": "2026-10-22T02:02:43.635Z",
+  "updated": "2026-10-22T01:56:12.529Z",
   "site": {
     "topbar": "Curated For The Heart and home",
     "taglineScript": "Conversations Over the Picket Fence",
@@ -588,10 +588,10 @@ window.CN_DATA = {
           "items": [
             {
               "name": "Pickensville Mercantile Co.",
-              "text": "Come visit our booth in downtown Easley.\nStore hours: Wed-Sat 10am - 5pm",
-              "address": "100 NW Main St, Suite B\nEasley, SC 29642",
+              "text": "Come visit our booth in downtown Easley.",
+              "address": "100 NW Main St, Suite B\nEasley, SC",
               "map": true,
-              "website": "https://www.facebook.com/p/Pickensville-Merchantile-Co-61593358182403/",
+              "website": "",
               "websiteLabel": "Visit their page",
               "image": "assets/img/uploads/845844726-122120304399445272-5528955592826344353-n-hhw19f.webp"
             }
@@ -906,17 +906,17 @@ window.CN_DATA = {
         {
           "type": "page-hero",
           "heading": "Our Story",
-          "lede": "\n\nWelcome to The Cows Nest!\n\nThe Cows Nest was born from a love of creating, decorating, and finding beauty in the little things that make a house feel like home.\n\nI've always been one to have an idea brewing. Sometimes it's something I've seen that sparks a little inspiration, a forgotten piece just waiting for a new purpose, or simply an idea that pops into my head. One thing usually leads to another, and before long, I'm dreaming up something new!\n\nWith over 20 years of experience in floral design, I've always had a love for colors, textures, and all the little details that bring something together. I especially love decorating with the changing seasons, creating charming vignettes, and mixing and matching pieces to make something feel special.\n\nThat same creative spirit is at the heart of The Cows Nest, where you'll find a thoughtfully curated mix of original artwork, handmade treasures, paper goods, unique gifts, seasonal collections, and charming accents for the heart and home.\n\nI believe it's often the little things that bring the most joy. A thoughtful gift, a whimsical little treasure, a seasonal favorite, or something that simply makes you smile. Sometimes it's the smallest touches that make the sweetest memories.\n\nWhether you're looking for something special for your home, a little gift for someone you love, or just something that catches your eye and makes your heart happy, I hope you'll find it here.\n\nI'm so glad you've stopped by my little corner of the world. Whether you're browsing, sharing The Cows Nest with a friend, or finding a little something to take home, your support means so much. I hope you'll stay awhile, look around, and feel right at home.\n\nThere's always something new taking shape here at The Cows Nest, and I'm so glad you're along for the journey!\n\nWith a little love,\n\nThe Cows Nest ♡\n\nCurated for the Heart and Home."
+          "lede": "Welcome to The Cows Nest!"
         },
         {
-          "type": "gallery",
+          "type": "text",
           "title": "",
-          "items": [
-            {
-              "image": "assets/img/uploads/add7225d749bde17473f21a7a79dfb8c9c0a7c1c7515e76ffe-ivmwsq.webp",
-              "caption": ""
-            }
-          ]
+          "text": "The Cows Nest was born from a love of creating, decorating, and finding beauty in the little things that make a house feel like home.\n\nI've always been one to have an idea brewing. Sometimes it's something I've seen that sparks a little inspiration, a forgotten piece just waiting for a new purpose, or simply an idea that pops into my head. One thing usually leads to another, and before long, I'm dreaming up something new!\n\nWith over 20 years of experience in floral design, I've always had a love for colors, textures, and all the little details that bring something together. I especially love decorating with the changing seasons, creating charming vignettes, and mixing and matching pieces to make something feel special.\n\nThat same creative spirit is at the heart of The Cows Nest, where you'll find a thoughtfully curated mix of original artwork, handmade treasures, paper goods, unique gifts, seasonal collections, and charming accents for the heart and home.\n\nI believe it's often the little things that bring the most joy. A thoughtful gift, a whimsical little treasure, a seasonal favorite, or something that simply makes you smile. Sometimes it's the smallest touches that make the sweetest memories.\n\nWhether you're looking for something special for your home, a little gift for someone you love, or just something that catches your eye and makes your heart happy, I hope you'll find it here.\n\nI'm so glad you've stopped by my little corner of the world. Whether you're browsing, sharing The Cows Nest with a friend, or finding a little something to take home, your support means so much. I hope you'll stay awhile, look around, and feel right at home.\n\nThere's always something new taking shape here at The Cows Nest, and I'm so glad you're along for the journey!\n\nWith a little love,\n\nThe Cows Nest ♡\n\nCurated for the Heart and Home.",
+          "align": "left",
+          "image": "assets/img/uploads/add7225d749bde17473f21a7a79dfb8c9c0a7c1c7515e76ffe-ivmwsq.webp",
+          "imageAlt": "",
+          "imageSide": "right",
+          "imageSize": "medium"
         }
       ]
     },

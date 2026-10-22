@@ -223,7 +223,12 @@ ${(s.items || []).map(p => {
   <ul class="wrap">${(s.items || []).map(t => `<li><img src="${src(t.icon)}" alt="" height="40" loading="lazy"><span>${lines(t.text)}</span></li>`).join('')}</ul>
 </section>`,
 
-    text: (s, i) => titled(s, i, `<div class="cn-text${s.align === 'center' ? ' cn-center' : ''}">${paras(s.text)}</div>`),
+    text: (s, i) => {
+      const side = ['left', 'right', 'above', 'below'].includes(s.imageSide) ? s.imageSide : 'right';
+      const size = ['small', 'medium', 'large'].includes(s.imageSize) ? s.imageSize : 'medium';
+      const pic = s.image ? `<img class="cn-pic cn-pic-${side} cn-pic-${size}" src="${src(s.image)}" alt="${esc(s.imageAlt)}" loading="lazy">` : '';
+      return titled(s, i, `<div class="cn-text${s.align === 'center' ? ' cn-center' : ''}${pic ? ' has-pic' : ''}">${side === 'below' ? '' : pic}${paras(s.text)}${side === 'below' ? pic : ''}</div>`);
+    },
 
     'image-text': (s, i) => `<section class="section wrap"${sid(i)}>
   <div class="cn-imgtext${s.side === 'right' ? ' cn-img-right' : ''}">

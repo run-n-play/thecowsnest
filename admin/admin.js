@@ -237,12 +237,17 @@
       make: () => ({ type: 'trust', items: [] })
     },
     text: {
-      name: 'Heading and words', blurb: 'A plain block of writing.',
-      title: s => s.title,
+      name: 'Heading and words', blurb: 'A block of writing, with an optional picture beside it.',
+      title: s => s.title || String(s.text || '').trim().split('\n')[0],
       fields: [
         F.text('title', 'Heading', 'Leave empty for no heading.'),
         F.area('text', 'Words', PARAS),
-        { t: 'select', k: 'align', l: 'Line up the words', options: [['left', 'On the left'], ['center', 'In the middle']] }
+        { t: 'select', k: 'align', l: 'Line up the words', options: [['left', 'On the left'], ['center', 'In the middle']] },
+        F.heading('Picture (optional)'),
+        F.img('image', 'Picture', { max: 1400 }),
+        F.text('imageAlt', 'Describe the picture', ALT),
+        { t: 'select', k: 'imageSide', l: 'Where the picture goes', options: [['right', 'Right side, words wrap around it'], ['left', 'Left side, words wrap around it'], ['above', 'Above the words'], ['below', 'Below the words']] },
+        { t: 'select', k: 'imageSize', l: 'Picture size', options: [['medium', 'Medium'], ['small', 'Small'], ['large', 'Large']] }
       ],
       make: () => ({ type: 'text', title: 'New heading', text: '', align: 'left' })
     },
@@ -417,34 +422,51 @@
     const meta = h('div', { class: 'img-meta' });
     const refresh = () => {
       const p = obj[def.k];
-      thumb.src = resolve(p); thumb.style.visibility = p ? '' : 'hidden';
+      thumb.src = resolve(p); thumb.style.visibility = p ? '' : 'hidden'; cropBtn.hidden = !p;
       meta.replaceChildren(p ? (pending[p] ? h('span', { class: 'new' }, 'New picture (not live yet)') : p.split('/').pop()) : 'No picture yet');
     };
-    const use = async f => {
+    const use = async (f, name) => {
       if (!f || !/^image\//.test(f.type)) { toast('That file is not a picture. Use a JPG or PNG photo.'); return; }
-      btn.disabled = true; btn.textContent = 'Getting it ready…';
-      try { obj[def.k] = await addImage(f, def); refresh(); changed(); }
+      btn.disabled = cropBtn.disabled = true;
+      try {
+        const bmp = await openBitmap(f);
+        const rect = await cropDialog(bmp, def.ratio);
+        if (!rect) { bmp.close && bmp.close(); return; }          // cancelled
+        btn.textContent = 'Getting it ready…';
+        obj[def.k] = await addImage(bmp, name || f.name, def, rect); refresh(); changed();
+      }
       catch (err) { toast(err.message, 7000); }
-      finally { btn.disabled = false; btn.textContent = 'Change picture'; input.value = ''; }
+      finally { btn.disabled = cropBtn.disabled = false; btn.textContent = 'Change picture'; input.value = ''; }
     };
+    const recrop = async () => {
+      const p = obj[def.k]; if (!p) return;
+      try {
+        const r = await fetch(resolve(p)); if (!r.ok) throw new Error();
+        const blob = await r.blob();
+        await use(blob.type ? blob : new Blob([blob], { type: 'image/jpeg' }), p.split('/').pop());
+      } catch { toast('That picture couldn\u2019t be opened for cropping. Use Change picture instead.', 7000); }
+    };
+    const cropBtn = h('button', { type: 'button', class: 'btn-quiet', onclick: recrop }, 'Crop');
     const input = h('input', { type: 'file', accept: 'image/*', hidden: true, id, onchange: e => use(e.target.files[0]) });
     const btn = h('button', { type: 'button', class: 'btn-quiet', onclick: () => input.click() }, 'Change picture');
-    const hint = def.ratio ? 'Any photo works. It gets trimmed to fit and made smaller.' : 'Any picture works. It gets made smaller to load fast.';
+    const hint = def.ratio ? 'Any photo works. You choose what part shows, then it\u2019s made smaller to load fast.' : 'Any picture works. You can crop it, then it\u2019s made smaller to load fast.';
     const box = h('div', { class: 'img-field',
       ondragover: e => { e.preventDefault(); box.classList.add('drag'); },
       ondragleave: () => box.classList.remove('drag'),
       ondrop: e => { e.preventDefault(); box.classList.remove('drag'); use(e.dataTransfer.files[0]); } },
-      thumb, h('div', {}, btn, input, meta, h('p', { class: 'hint' }, hint + ' You can also drag a picture here.')));
+      thumb, h('div', {}, h('div', { class: 'img-btns' }, btn, cropBtn), input, meta, h('p', { class: 'hint' }, hint + ' You can also drag a picture here.')));
     refresh();
     return box;
   }
 
-  async function addImage(file, def) {
-    let bmp;
-    try { bmp = await createImageBitmap(file); }
+  async function openBitmap(file) {
+    try { return await createImageBitmap(file); }
     catch { throw new Error("That picture can't be opened here (iPhone HEIC photos often can't). Save it as a JPG and try again."); }
-    let sx = 0, sy = 0, sw = bmp.width, sh = bmp.height;
-    if (def.ratio) {               // center-crop to the slot's shape
+  }
+
+  async function addImage(bmp, fileName, def, crop) {
+    let { sx, sy, sw, sh } = crop || { sx: 0, sy: 0, sw: bmp.width, sh: bmp.height };
+    if (!crop && def.ratio) {      // center-crop to the slot's shape
       if (sw / sh > def.ratio) { sw = Math.round(sh * def.ratio); sx = Math.round((bmp.width - sw) / 2); }
       else { sh = Math.round(sw / def.ratio); sy = Math.round((bmp.height - sh) / 2); }
     }
@@ -459,10 +481,83 @@
     if (!blob || blob.type !== 'image/webp') blob = def.ratio ? await toBlob('image/jpeg', 0.85) : await toBlob('image/png');
     if (!blob) throw new Error('That picture could not be processed. Try a different one.');
     const ext = { 'image/webp': 'webp', 'image/jpeg': 'jpg', 'image/png': 'png' }[blob.type];
-    const base = slugify(file.name.replace(/\.[^.]+$/, '')) || 'photo';
+    const base = slugify(String(fileName || '').replace(/\.[^.]+$/, '').replace(/-[a-z0-9]{6}$/, '')) || 'photo';
     const path = `assets/img/uploads/${base}-${Date.now().toString(36).slice(-6)}.${ext}`;
     pending[path] = blob; urls[path] = URL.createObjectURL(blob);
     return path;
+  }
+
+  // ---------- crop window ----------
+  // Resolves to { sx, sy, sw, sh } in picture pixels, or null if cancelled.
+  // ratio: fixed width/height for slots that need one shape; otherwise she can pick.
+  function cropDialog(bmp, ratio) {
+    return new Promise(done => {
+      const maxW = Math.min(innerWidth - 48, 900), maxH = Math.min(innerHeight - 260, 640);
+      const k = Math.min(maxW / bmp.width, maxH / bmp.height, 1);
+      const W = Math.round(bmp.width * k), H = Math.round(bmp.height * k);
+      const cv = h('canvas', { width: W, height: H, class: 'crop-img' });
+      cv.getContext('2d').drawImage(bmp, 0, 0, W, H);
+      const box = h('div', { class: 'crop-rect' }, ...['nw', 'ne', 'sw', 'se'].map(c => h('span', { class: `crop-h ${c}`, 'data-h': c })));
+      const stage = h('div', { class: 'crop-stage', style: `width:${W}px;height:${H}px` }, cv, box);
+      let r = { x: 0, y: 0, w: W, h: H }, lock = ratio || 0;
+      const fit = rt => {                       // biggest centred box of that shape
+        if (!rt) return { x: 0, y: 0, w: W, h: H };
+        let w = W, hh = W / rt; if (hh > H) { hh = H; w = H * rt; }
+        return { x: (W - w) / 2, y: (H - hh) / 2, w, h: hh };
+      };
+      const draw = () => Object.assign(box.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' });
+      r = fit(lock); draw();
+
+      let drag = null;
+      stage.addEventListener('pointerdown', e => {
+        const hd = e.target.dataset && e.target.dataset.h;
+        if (!hd && e.target !== box) return;
+        e.preventDefault(); stage.setPointerCapture(e.pointerId);
+        drag = { hd, px: e.clientX, py: e.clientY, r0: { ...r } };
+      });
+      stage.addEventListener('pointermove', e => {
+        if (!drag) return;
+        const dx = e.clientX - drag.px, dy = e.clientY - drag.py, o = drag.r0;
+        if (!drag.hd) {
+          r.x = Math.min(Math.max(0, o.x + dx), W - o.w); r.y = Math.min(Math.max(0, o.y + dy), H - o.h);
+        } else {
+          const east = drag.hd.includes('e'), south = drag.hd.includes('s');
+          const ax = east ? o.x : o.x + o.w, ay = south ? o.y : o.y + o.h;          // fixed corner
+          const px = (east ? o.x + o.w : o.x) + dx, py = (south ? o.y + o.h : o.y) + dy;
+          const availW = east ? W - ax : ax, availH = south ? H - ay : ay;
+          let w = Math.min(Math.max(30, east ? px - ax : ax - px), availW);
+          let hh = Math.min(Math.max(30, south ? py - ay : ay - py), availH);
+          if (lock) { w = Math.min(Math.max(w, hh * lock), availW, availH * lock); hh = w / lock; }
+          r = { x: east ? ax : ax - w, y: south ? ay : ay - hh, w, h: hh };
+        }
+        draw();
+      });
+      const end = () => { drag = null; };
+      stage.addEventListener('pointerup', end); stage.addEventListener('pointercancel', end);
+
+      const close = val => { wrap.remove(); removeEventListener('keydown', esc); done(val); };
+      const esc = e => { if (e.key === 'Escape') close(null); };
+      addEventListener('keydown', esc);
+      const shapes = [['0', 'Any shape'], [String(bmp.width / bmp.height), 'Same as the photo'], ['1', 'Square'], ['1.3333', 'Wide (4:3)'], ['0.75', 'Tall (3:4)'], ['1.7778', 'Extra wide (16:9)']];
+      const shapeSel = ratio ? null : h('select', { 'aria-label': 'Shape', onchange: e => { lock = Number(e.target.value) || 0; r = fit(lock); draw(); } },
+        shapes.map(([v, l]) => h('option', { value: v }, l)));
+      const wrap = h('div', { class: 'crop-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Crop the picture' },
+        h('div', { class: 'crop-panel' },
+          h('h2', {}, 'Crop the picture'),
+          h('p', { class: 'hint' }, ratio ? 'Drag the box to choose what shows. Drag a corner to zoom in or out. This spot needs this shape.'
+            : 'Drag the box to move it. Drag a corner to make it bigger or smaller.'),
+          stage,
+          h('div', { class: 'crop-bar' },
+            shapeSel,
+            h('button', { type: 'button', class: 'btn-quiet', onclick: () => { r = fit(lock); draw(); } }, lock ? 'Biggest box' : 'Whole picture'),
+            h('span', { style: 'flex:1' }),
+            h('button', { type: 'button', class: 'btn-quiet', onclick: () => close(null) }, 'Cancel'),
+            h('button', { type: 'button', class: 'btn-main', onclick: () => close({
+              sx: Math.round(r.x / k), sy: Math.round(r.y / k),
+              sw: Math.max(1, Math.min(bmp.width - Math.round(r.x / k), Math.round(r.w / k))),
+              sh: Math.max(1, Math.min(bmp.height - Math.round(r.y / k), Math.round(r.h / k))) }) }, 'Use this'))));
+      document.body.append(wrap);
+    });
   }
 
   // drop new pictures that are no longer used anywhere

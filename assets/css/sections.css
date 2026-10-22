@@ -3,6 +3,21 @@
 .cn-text { max-width: 46rem; }
 .cn-text.cn-center { margin-inline: auto; text-align: center; }
 .cn-text p { margin: 0 0 1em; line-height: 1.65; }
+/* picture beside the words */
+.cn-text.has-pic { max-width: 64rem; margin-inline: auto; }
+.cn-text.has-pic::after { content: ""; display: block; clear: both; }
+.cn-pic { height: auto; border-radius: 6px; display: block; }
+.cn-pic-right { float: right; margin: .3rem 0 1rem 2rem; }
+.cn-pic-left { float: left; margin: .3rem 2rem 1rem 0; }
+.cn-pic-above { margin: 0 auto 1.5rem; }
+.cn-pic-below { margin: 1.5rem auto 0; }
+.cn-pic-small { width: 28%; } .cn-pic-medium { width: 40%; } .cn-pic-large { width: 52%; }
+.cn-pic-above.cn-pic-small, .cn-pic-below.cn-pic-small { width: min(100%, 320px); }
+.cn-pic-above.cn-pic-medium, .cn-pic-below.cn-pic-medium { width: min(100%, 560px); }
+.cn-pic-above.cn-pic-large, .cn-pic-below.cn-pic-large { width: 100%; }
+@media (max-width: 700px) {
+  .cn-pic-left, .cn-pic-right { float: none; width: 100%; margin: 0 0 1.2rem; }
+}
 
 .cn-imgtext { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(1.25rem, 4vw, 3rem); align-items: center; }
 .cn-imgtext > img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; }
