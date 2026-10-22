@@ -1,6 +1,6 @@
 /* The Cows Nest – site content. Edited with /admin. */
 window.CN_DATA = {
-  "updated": "2026-10-22T01:14:37.247Z",
+  "updated": "2026-10-22T01:26:19.294Z",
   "site": {
     "topbar": "Curated For The Heart and home",
     "taglineScript": "Conversations Over the Picket Fence",
@@ -1173,6 +1173,13 @@ window.CN_DATA = {
           "lede": "Silk flowers, arrangements, wreaths & more"
         },
         {
+          "type": "product-grid",
+          "title": "",
+          "category": "floral",
+          "limit": 0,
+          "emptyText": ""
+        },
+        {
           "type": "coming-soon",
           "image": "assets/img/icon-bird.jpg",
           "title": "This page is coming soon",
@@ -1237,6 +1244,12 @@ window.CN_DATA = {
         "label": "Seasonal Collections",
         "square": "Seasonal",
         "page": "seasonal",
+        "kind": "goods"
+      },
+      {
+        "square": "Floral",
+        "label": "Florals",
+        "page": "floral",
         "kind": "goods"
       }
     ],
