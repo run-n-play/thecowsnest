@@ -1,6 +1,6 @@
 /* The Cows Nest – site content. Edited with /admin. */
 window.CN_DATA = {
-  "updated": "2026-10-21T02:44:23.887Z",
+  "updated": "2026-10-22T01:06:07.764Z",
   "site": {
     "topbar": "Curated For The Heart and home",
     "taglineScript": "Conversations Over the Picket Fence",
@@ -111,6 +111,11 @@ window.CN_DATA = {
       {
         "label": "Contact",
         "href": "contact.html",
+        "children": []
+      },
+      {
+        "label": "floral",
+        "href": "floral.html",
         "children": []
       }
     ],
@@ -246,32 +251,32 @@ window.CN_DATA = {
               "link": "handmade-goods.html"
             },
             {
-              "title": "Paper Goods & Printables",
-              "text": "Notepads, recipe cards, art prints & more",
+              "title": "Paper Goods ",
+              "text": " Recipe Cards, Garlands, Ephemera, Book Marks, Notepads, & More",
               "image": "assets/img/uploads/20260906-190215-hgh68e-hgzdbt.webp",
               "link": "paper-goods.html"
             },
             {
-              "title": "Sweet Treats & Goodies",
-              "text": "Baked goods, popcorn, snacks & mixes",
-              "image": "assets/img/cat-treats.jpg",
-              "link": "sweet-treats.html"
+              "title": "Art Prints",
+              "text": "Printed 8X10 & 5X7 Art, and Poems. Ready to Frame",
+              "image": "assets/img/uploads/20260914-213222-it8leg.webp",
+              "link": "art-prints.html"
             },
             {
               "title": "Apparel & Accessories",
-              "text": "Shirts, hats, tote bags, keychains & more",
-              "image": "assets/img/cat-apparel.jpg",
+              "text": "Shirts, hats, tote bags, & more",
+              "image": "assets/img/uploads/20260820-102156-it902u.webp",
               "link": "apparel.html"
             },
             {
-              "title": "Jewelry & Small Finds",
-              "text": "Handmade jewelry, charms & treasures",
+              "title": "Jewelry, Bag Charms",
+              "text": "Handmade jewelry, bag charms, key chains & treasures",
               "image": "assets/img/uploads/20261016-101548-hgzjnp.webp",
               "link": "jewelry.html"
             },
             {
               "title": "Digital Downloads",
-              "text": "Coloring pages, planners, binders & more",
+              "text": "Coloring pages, planners & more",
               "image": "assets/img/cat-downloads.jpg",
               "link": "digital-downloads.html"
             },
@@ -280,6 +285,12 @@ window.CN_DATA = {
               "text": "New finds for every season",
               "image": "assets/img/uploads/20261016-101555-hgzv92.webp",
               "link": "seasonal.html"
+            },
+            {
+              "title": "Florals",
+              "text": "Silk wreaths, arrangements, & Bows",
+              "image": "assets/img/uploads/screenshot-20250516-165504-gallery-ittysp.webp",
+              "link": "floral.html"
             }
           ]
         },
@@ -290,14 +301,14 @@ window.CN_DATA = {
             {
               "title": "The Roadside Stand",
               "text": "Our honor stand on the corner, with fresh baked goods, seasonal treats, paper goods and rotating finds. Open daily from sunup to sundown.",
-              "image": "assets/img/visit-stand.jpg",
+              "image": "assets/img/uploads/visit-stand-iuaai2.webp",
               "buttonLabel": "Learn more",
               "link": "roadside-stand.html"
             },
             {
               "title": "The Vendor Booth",
               "text": "Find us inside a large antique mall with home décor, handcrafted gifts, wreaths, jewelry, paper goods and more.",
-              "image": "assets/img/visit-booth.jpg",
+              "image": "assets/img/uploads/20261016-101435-2-iuaw9f.webp",
               "buttonLabel": "See the booth",
               "link": "vendor-booth.html"
             },
@@ -897,25 +908,7 @@ window.CN_DATA = {
         {
           "type": "page-hero",
           "heading": "Our Story",
-          "lede": "How the Cows Nest came to be."
-        },
-        {
-          "type": "coming-soon",
-          "image": "assets/img/daisy-pip-chat.jpg",
-          "title": "This page is coming soon",
-          "text": "We're still setting this part of the nest up. In the meantime, have a look around the rest of the shop.",
-          "buttons": [
-            {
-              "label": "Back to home",
-              "link": "index.html",
-              "style": "solid"
-            },
-            {
-              "label": "Contact us",
-              "link": "contact.html",
-              "style": "outline"
-            }
-          ]
+          "lede": "\n\nWelcome to The Cows Nest!\n\nThe Cows Nest was born from a love of creating, decorating, and finding beauty in the little things that make a house feel like home.\n\nI've always been one to have an idea brewing. Sometimes it's something I've seen that sparks a little inspiration, a forgotten piece just waiting for a new purpose, or simply an idea that pops into my head. One thing usually leads to another, and before long, I'm dreaming up something new!\n\nWith over 20 years of experience in floral design, I've always had a love for colors, textures, and all the little details that bring something together. I especially love decorating with the changing seasons, creating charming vignettes, and mixing and matching pieces to make something feel special.\n\nThat same creative spirit is at the heart of The Cows Nest, where you'll find a thoughtfully curated mix of original artwork, handmade treasures, paper goods, unique gifts, seasonal collections, and charming accents for the heart and home.\n\nI believe it's often the little things that bring the most joy. A thoughtful gift, a whimsical little treasure, a seasonal favorite, or something that simply makes you smile. Sometimes it's the smallest touches that make the sweetest memories.\n\nWhether you're looking for something special for your home, a little gift for someone you love, or just something that catches your eye and makes your heart happy, I hope you'll find it here.\n\nI'm so glad you've stopped by my little corner of the world. Whether you're browsing, sharing The Cows Nest with a friend, or finding a little something to take home, your support means so much. I hope you'll stay awhile, look around, and feel right at home.\n\nThere's always something new taking shape here at The Cows Nest, and I'm so glad you're along for the journey!\n\nWith a little love,\n\nThe Cows Nest ♡\n\nCurated for the Heart and Home."
         }
       ]
     },
@@ -1165,6 +1158,35 @@ window.CN_DATA = {
           ]
         }
       ]
+    },
+    "floral": {
+      "title": "floral | The Cows Nest",
+      "description": "",
+      "sections": [
+        {
+          "type": "page-hero",
+          "heading": "Florals",
+          "lede": "Silk flowers, arrangements, wreaths & more"
+        },
+        {
+          "type": "coming-soon",
+          "image": "assets/img/icon-bird.jpg",
+          "title": "This page is coming soon",
+          "text": "We're still setting this part of the nest up. In the meantime, have a look around the rest of the shop.",
+          "buttons": [
+            {
+              "label": "Back to home",
+              "link": "index.html",
+              "style": "solid"
+            },
+            {
+              "label": "Contact us",
+              "link": "contact.html",
+              "style": "outline"
+            }
+          ]
+        }
+      ]
     }
   },
   "shop": {
@@ -1220,7 +1242,6 @@ window.CN_DATA = {
       "note": "We'll text you when your order is ready to pick up."
     },
     "shipping": {
-      "enabled": true,
       "sizes": [
         {
           "label": "Envelope",
@@ -1239,10 +1260,11 @@ window.CN_DATA = {
         }
       ],
       "extraItem": 1,
+      "lower48Only": true,
+      "enabled": true,
       "flat": 8,
       "freeOver": 75,
-      "note": "Orders ship within 3–5 business days.",
-      "lower48Only": true
+      "note": "Orders ship within 3–5 business days."
     },
     "taxNote": "Sales tax is added at checkout."
   }
