@@ -1,6 +1,6 @@
 /* The Cows Nest – site content. Edited with /admin. */
 window.CN_DATA = {
-  "updated": "2026-10-22T01:56:12.529Z",
+  "updated": "2026-10-22T02:00:25.659Z",
   "site": {
     "topbar": "Curated For The Heart and home",
     "taglineScript": "Conversations Over the Picket Fence",
@@ -589,9 +589,9 @@ window.CN_DATA = {
             {
               "name": "Pickensville Mercantile Co.",
               "text": "Come visit our booth in downtown Easley.",
-              "address": "100 NW Main St, Suite B\nEasley, SC",
+              "address": "100 NW Main St, Suite B\nEasley, SC 29642",
               "map": true,
-              "website": "",
+              "website": "https://www.facebook.com/p/Pickensville-Merchantile-Co-61593358182403/",
               "websiteLabel": "Visit their page",
               "image": "assets/img/uploads/845844726-122120304399445272-5528955592826344353-n-hhw19f.webp"
             }
