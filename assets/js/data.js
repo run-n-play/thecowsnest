@@ -1,6 +1,6 @@
 /* The Cows Nest – site content. Edited with /admin. */
 window.CN_DATA = {
-  "updated": "2026-10-22T01:29:53.307Z",
+  "updated": "2026-10-22T01:33:12.615Z",
   "site": {
     "topbar": "Curated For The Heart and home",
     "taglineScript": "Conversations Over the Picket Fence",
@@ -53,6 +53,10 @@ window.CN_DATA = {
             "href": "jewelry.html"
           },
           {
+            "label": "Digital Downloads",
+            "href": "digital-downloads.html"
+          },
+          {
             "label": "Seasonal Collections",
             "href": "seasonal.html"
           },
@@ -61,11 +65,6 @@ window.CN_DATA = {
             "href": "floral.html"
           }
         ]
-      },
-      {
-        "label": "Digital Downloads",
-        "href": "digital-downloads.html",
-        "children": []
       },
       {
         "label": "Visit the Cows Nest",
