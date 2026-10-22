@@ -1,6 +1,6 @@
 /* The Cows Nest – site content. Edited with /admin. */
 window.CN_DATA = {
-  "updated": "2026-10-22T01:53:19.289Z",
+  "updated": "2026-10-22T01:56:12.529Z",
   "site": {
     "topbar": "Curated For The Heart and home",
     "taglineScript": "Conversations Over the Picket Fence",
@@ -220,7 +220,7 @@ window.CN_DATA = {
           "type": "hero",
           "welcome": "Welcome to",
           "name": "The Cows Nest",
-          "text": "A creative Southern mercantile filled with handmade goods, paper treasures, sweet treats, seasonal finds, and simple things that make everyday life special.",
+          "text": "A creative Southern Mercantile filled with handmade goods, paper treasures, seasonal finds, and simple things that make everyday life special.",
           "buttons": [
             {
               "label": "Shop online",
