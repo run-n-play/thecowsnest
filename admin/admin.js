@@ -781,24 +781,73 @@
           }
         }
       }
-      // download files: one row per digital item
-      const digital = (res.products || []).filter(p => p.kind === 'digital');
-      dl.replaceChildren(h('p', { class: 'hint' }, 'For each digital download, give Russell the file. He uploads it and you type its file name here, exactly as he gives it to you.'));
-      if (!data.shop.downloads) data.shop.downloads = [];
-      if (!digital.length) dl.append(h('p', { class: 'lead' }, 'No digital download items in Square yet.'));
-      for (const p of digital) {
-        let row = data.shop.downloads.find(x => x.item === p.id);
-        const id = 'f' + (++uid);
-        dl.append(h('div', { class: 'field' }, h('label', { for: id }, p.name),
-          h('input', { id, type: 'text', value: row ? row.file : '', placeholder: 'for example: coloring-pages.pdf', oninput: e => {
-            const v = e.target.value.trim();
-            row = data.shop.downloads.find(x => x.item === p.id);
-            if (v && row) row.file = v; else if (v) data.shop.downloads.push({ item: p.id, file: v });
-            else data.shop.downloads = data.shop.downloads.filter(x => x.item !== p.id);
-            changed();
-          } })));
-      }
+      // download files: one row per digital item, uploaded straight to the shop's file storage
+      renderDownloads(dl, (res.products || []).filter(p => p.kind === 'digital'));
     });
+  }
+
+  // ---------- digital download files ----------
+  const shopApi = () => String(data.shop.checkoutUrl || '').replace(/\/+$/, '');
+  async function shopAdmin(path, opts = {}) {
+    const res = await fetch(shopApi() + path, { ...opts, cache: 'no-store', headers: { ...(opts.headers || {}), Authorization: `Bearer ${ghToken}` } });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(out.error || `Something went wrong (${res.status}).`);
+    return out;
+  }
+  const sizeText = n => n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+
+  async function renderDownloads(box, items) {
+    box.replaceChildren(h('p', { class: 'hint' }, 'Each digital item needs its file (a PDF, ZIP or picture). Upload it here. Shoppers get a download button right after they pay.'));
+    if (!items.length) { box.append(h('p', { class: 'lead' }, 'No digital items yet. In Square, give an item the ', h('b', {}, 'Website'), ' and ', h('b', {}, 'Digital Downloads'), ' categories.')); return; }
+    if (!ghToken) { box.append(h('p', { class: 'notice' }, 'Connect this device first (Settings \u2192 Connect this device), then you can upload files here.')); return; }
+    const status = h('p', { class: 'lead' }, 'Checking files\u2026'); box.append(status);
+    let files;
+    try { files = new Map((await shopAdmin('/admin/files')).files.map(f => [f.item, f])); }
+    catch (err) { status.className = 'notice'; status.textContent = err.message === 'Failed to fetch' ? 'Couldn\u2019t reach the shop. Try again in a minute.' : err.message; return; }
+    status.remove();
+    for (const p of items) box.append(downloadRow(p, files.get(p.id)));
+  }
+
+  function downloadRow(p, file) {
+    const info = h('span', { class: 'sec-title' });
+    const input = h('input', { type: 'file', hidden: true });
+    const up = h('button', { type: 'button', class: 'btn-quiet' });
+    const check = h('button', { type: 'button', class: 'btn-quiet' }, 'Check it');
+    const del = h('button', { type: 'button', class: 'icon-btn danger', title: 'Remove this file', 'aria-label': `Remove the file for ${p.name}` }, '\u2715');
+    const show = f => {
+      file = f;
+      info.replaceChildren(f ? `${f.name} \u00b7 ${sizeText(f.size)}` : h('span', { class: 'badge warn' }, 'No file yet: shoppers can\u2019t buy it'));
+      up.textContent = f ? 'Replace file' : 'Upload file';
+      check.hidden = del.hidden = !f;
+    };
+    const busy = (on, label) => { up.disabled = check.disabled = del.disabled = on; if (label) up.textContent = label; };
+    up.addEventListener('click', () => input.click());
+    input.addEventListener('change', async () => {
+      const f = input.files[0]; input.value = '';
+      if (!f) return;
+      if (file && !confirm(`Replace ${file.name} with ${f.name}?`)) return;
+      busy(true, 'Uploading\u2026');
+      try {
+        const out = await shopAdmin(`/admin/file?item=${encodeURIComponent(p.id)}&name=${encodeURIComponent(f.name)}`,
+          { method: 'PUT', headers: { 'Content-Type': f.type || 'application/octet-stream' }, body: f });
+        show({ name: out.name, size: out.size }); squareCache = null;
+        toast(`Uploaded. ${p.name} can be bought within about a minute.`, 6000);
+      } catch (err) { toast(err.message === 'Failed to fetch' ? 'The upload didn\u2019t go through. Check the internet connection and try again.' : err.message, 8000); show(file); }
+      finally { busy(false); }
+    });
+    check.addEventListener('click', async () => {
+      try { const { url } = await shopAdmin(`/admin/file-link?item=${encodeURIComponent(p.id)}`); open(url, '_blank'); }
+      catch (err) { toast(err.message, 7000); }
+    });
+    del.addEventListener('click', async () => {
+      if (!confirm(`Remove the file for ${p.name}? Shoppers won\u2019t be able to buy it until you upload one again.`)) return;
+      busy(true);
+      try { await shopAdmin(`/admin/file?item=${encodeURIComponent(p.id)}`, { method: 'DELETE' }); show(null); squareCache = null; }
+      catch (err) { toast(err.message, 7000); }
+      finally { busy(false); }
+    });
+    show(file);
+    return h('div', { class: 'sq-item dl-row' }, h('span', { class: 'sec-name' }, p.name), info, up, check, del, input);
   }
 
   // ---------- colors ----------

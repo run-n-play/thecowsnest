@@ -48,6 +48,7 @@ export default {
       if (url.pathname === '/square-webhook' && req.method === 'POST') return await squareWebhook(req, env);
       if (url.pathname === '/order' && req.method === 'GET') return json(await getOrder(url, env), 200, cors);
       if (url.pathname === '/download' && req.method === 'GET') return await download(url, env);
+      if (url.pathname.startsWith('/admin/')) return json(await admin(req, url, env), 200, cors);
       return json({ error: 'Not found' }, 404, cors);
     } catch (err) {
       const status = err instanceof UserError ? err.status : 500;
@@ -61,7 +62,7 @@ export default {
 function corsHeaders(req, env) {
   const origin = req.headers.get('Origin') || '';
   const allowed = String(env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
-  const h = { 'Vary': 'Origin', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400' };
+  const h = { 'Vary': 'Origin', 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Max-Age': '86400' };
   if (allowed.includes(origin)) h['Access-Control-Allow-Origin'] = origin;
   return h;
 }
@@ -104,7 +105,7 @@ async function getCatalog(env) {
 }
 
 async function buildCatalog(env) {
-  const [site, objects] = await Promise.all([loadSite(env), listCatalog(env)]);
+  const [site, objects, stored] = await Promise.all([loadSite(env), listCatalog(env), listFiles(env)]);
   const shop = site.shop || {};
   const loc = env.SQUARE_LOCATION_ID;
   const images = new Map(), cats = new Map();
@@ -115,7 +116,9 @@ async function buildCatalog(env) {
   const mapping = (shop.categories || []).filter(c => c.square && c.page);
   const sizes = shipSizes(shop);
   const websiteCat = norm(shop.websiteCategory);
+  // files uploaded from the editor (R2: downloads/<item id>/<name>) win over older data.js entries
   const files = new Map((shop.downloads || []).filter(d => d.item && d.file).map(d => [d.item, String(d.file)]));
+  for (const [item, f] of stored) files.set(item, f.key);
   const atLocation = o => (o.present_at_all_locations !== false || (o.present_at_location_ids || []).includes(loc)) && !(o.absent_at_location_ids || []).includes(loc);
 
   const products = [];
@@ -481,6 +484,79 @@ async function verify(env, token) {
   } catch { return null; }
 }
 
+// ---------- digital download files (uploaded from the editor) ----------
+const FILE_PREFIX = 'downloads/';
+const MAX_UPLOAD = 95 * 1024 * 1024;
+
+async function listFiles(env) {
+  const out = new Map();
+  if (!env.FILES) return out;
+  let cursor;
+  do {
+    const r = await env.FILES.list({ prefix: FILE_PREFIX, cursor });
+    for (const o of r.objects) {
+      const [, item, ...rest] = o.key.split('/');
+      if (item && rest.length) out.set(item, { key: o.key, name: rest.join('/'), size: o.size, uploaded: o.uploaded });
+    }
+    cursor = r.truncated ? r.cursor : undefined;
+  } while (cursor);
+  return out;
+}
+
+// Only a device connected for publishing may manage files: the same GitHub key must be
+// able to push to the website's repo.
+const adminOk = new Map(); // token hash -> expiry
+async function checkAdmin(req, env) {
+  const tok = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim();
+  if (!tok) throw new UserError('Connect this device first (Settings \u2192 Connect this device).', 401);
+  const hash = b64u(await crypto.subtle.digest('SHA-256', enc.encode(tok)));
+  if ((adminOk.get(hash) || 0) > Date.now()) return;
+  const res = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO || 'run-n-play/thecowsnest'}`, {
+    headers: { 'Authorization': `Bearer ${tok}`, 'Accept': 'application/vnd.github+json', 'User-Agent': 'cowsnest-shop' } });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok || !(j.permissions && (j.permissions.push || j.permissions.admin)))
+    throw new UserError('This device\u2019s publishing key can\u2019t manage files. Ask Russell to check it.', 403);
+  adminOk.set(hash, Date.now() + 10 * 60 * 1000);
+}
+
+async function admin(req, url, env) {
+  await checkAdmin(req, env);
+  if (!env.FILES) throw new UserError('File storage isn\u2019t switched on yet. Russell needs to turn on R2.', 503);
+  const item = url.searchParams.get('item') || '';
+  const needItem = () => { if (!/^[A-Za-z0-9]{6,64}$/.test(item)) throw new UserError('Unknown item.'); };
+  const clear = async () => { const old = (await listFiles(env)).get(item); if (old) await env.FILES.delete(old.key); };
+
+  if (url.pathname === '/admin/files' && req.method === 'GET') {
+    return { files: [...(await listFiles(env))].map(([it, f]) => ({ item: it, name: f.name, size: f.size, uploaded: f.uploaded })) };
+  }
+  if (url.pathname === '/admin/file' && req.method === 'PUT') {
+    needItem();
+    const name = String(url.searchParams.get('name') || '').split(/[\\/]/).pop().replace(/[^\w.\- ]+/g, '_').replace(/\s+/g, ' ').trim().slice(0, 120);
+    if (!/\.[A-Za-z0-9]{2,5}$/.test(name)) throw new UserError('That file needs a name with an ending like .pdf or .zip.');
+    const len = Number(req.headers.get('Content-Length') || 0);
+    if (!len) throw new UserError('That file is empty.');
+    if (len > MAX_UPLOAD) throw new UserError('That file is too big (over 95 MB). Try zipping it or splitting it up.');
+    await clear();
+    const key = `${FILE_PREFIX}${item}/${name}`;
+    const body = len <= 25 * 1024 * 1024 ? await req.arrayBuffer() : req.body;
+    await env.FILES.put(key, body, { httpMetadata: { contentType: req.headers.get('Content-Type') || 'application/octet-stream' } });
+    memo = null;
+    return { item, name, size: len };
+  }
+  if (url.pathname === '/admin/file' && req.method === 'DELETE') {
+    needItem(); await clear(); memo = null;
+    return { item, removed: true };
+  }
+  if (url.pathname === '/admin/file-link' && req.method === 'GET') {
+    needItem();
+    const f = (await listFiles(env)).get(item);
+    if (!f) throw new UserError('No file for that item yet.', 404);
+    const token = await sign(env, { f: f.key, e: Math.floor(Date.now() / 1000) + 600 });
+    return { url: `${url.origin}/download?t=${token}` };
+  }
+  throw new UserError('Not found.', 404);
+}
+
 const page = (status, msg) => new Response(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>The Cows Nest</title><p style="font:18px/1.5 Georgia,serif;max-width:32rem;margin:4rem auto;padding:0 1rem">${msg}</p>`,
   { status, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
 
@@ -488,6 +564,7 @@ async function download(url, env) {
   const t = await verify(env, url.searchParams.get('t'));
   if (!t || !t.f) return page(403, 'This download link is not valid. Please use the link from your order page.');
   if (Date.now() / 1000 > t.e) return page(410, 'This download link has expired. Please contact us and we will send you a new one.');
+  if (!env.FILES) return page(503, 'Downloads are not available right now. Please contact us and we will send your file.');
   const obj = await env.FILES.get(t.f);
   if (!obj) { console.error('missing R2 object', t.f); return page(404, 'We could not find this file. Please contact us and we will sort it out.'); }
   const name = String(t.f).split('/').pop().replace(/[^\w.\- ]+/g, '_');

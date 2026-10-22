@@ -192,3 +192,5 @@ details.more[open] > summary { margin-bottom: .2rem; }
 .crop-h.ne { right: -12px; top: -12px; cursor: nesw-resize; } .crop-h.sw { left: -12px; bottom: -12px; cursor: nesw-resize; }
 .crop-bar { display: flex; align-items: center; gap: .5rem; margin-top: .9rem; flex-wrap: wrap; }
 .crop-bar select { border: 1px solid var(--line); border-radius: 8px; padding: .45rem .5rem; background: #fff; }
+.dl-row { flex-wrap: wrap; } .dl-row .sec-name { min-width: 10rem; }
+.dl-row [hidden] { display: none; }
