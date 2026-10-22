@@ -1,6 +1,6 @@
 /* The Cows Nest – site content. Edited with /admin. */
 window.CN_DATA = {
-  "updated": "2026-10-22T01:44:27.963Z",
+  "updated": "2026-10-22T01:53:19.289Z",
   "site": {
     "topbar": "Curated For The Heart and home",
     "taglineScript": "Conversations Over the Picket Fence",
@@ -342,31 +342,31 @@ window.CN_DATA = {
           "title": "Follow along on Facebook",
           "items": [
             {
-              "image": "assets/img/insta-1.jpg",
+              "image": "assets/img/uploads/20260826-200801-ivzvj2.webp",
               "link": ""
             },
             {
-              "image": "assets/img/insta-2.jpg",
+              "image": "assets/img/uploads/20260902-133541-ivxjld.webp",
               "link": ""
             },
             {
-              "image": "assets/img/insta-3.jpg",
+              "image": "assets/img/uploads/20261020-161628-ivx508.webp",
               "link": ""
             },
             {
-              "image": "assets/img/insta-4.jpg",
+              "image": "assets/img/uploads/file-000000002ed48246b15a4109fa047cb9-ivwmzq.webp",
               "link": ""
             },
             {
-              "image": "assets/img/insta-5.jpg",
+              "image": "assets/img/uploads/20261006-160444-ivyj5h.webp",
               "link": ""
             },
             {
-              "image": "assets/img/insta-6.jpg",
+              "image": "assets/img/uploads/20261012-093504-ivyohn.webp",
               "link": ""
             },
             {
-              "image": "assets/img/insta-7.jpg",
+              "image": "assets/img/uploads/20260826-201152-1-ivzi9c.webp",
               "link": ""
             }
           ],
